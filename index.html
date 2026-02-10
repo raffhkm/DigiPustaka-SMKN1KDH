@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Perpus Pro | Ultimate Admin</title>
+    <title>DigiPustaka</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -129,7 +129,7 @@
                         <span class="absolute inset-y-0 left-4 flex items-center text-slate-400">
                             <i class="fas fa-shield-halved"></i>
                         </span>
-                        <input type="password" id="adminPass" placeholder="•••••" 
+                        <input type="password" id="adminPass" placeholder="apahayo.....?" 
                             class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none">
                     </div>
                 </div>
@@ -149,7 +149,8 @@
 </div>
                 <div>
                     <h2 id="pageTitle" class="text-lg font-extrabold text-white leading-none">Dashboard</h2>
-                    <p class="text-[10px] text-blue-100 font-bold uppercase tracking-tighter mt-1">Status Operasional</p>
+                    <p class="text-[10px] text-blue-100 font-bold uppercase tracking-tighter mt-1">SISTEM PERPUSTAKAAN DIGITAL</p>
+                    <p class="text-[10px] text-blue-100 font-bold uppercase tracking-tighter mt-1"><small>by:raffhkm</small></p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
@@ -219,7 +220,7 @@
 
                 <div class="pb-10">
                     <div class="flex justify-between items-center mb-5">
-                        <h4 class="font-extrabold text-slate-800">Antrian Kembali</h4>
+                        <h4 class="font-extrabold text-slate-800">Sedang Dipinjam</h4>
                         <span id="loan-count-badge" class="bg-blue-100 text-blue-600 text-[10px] px-2 py-1 rounded-lg font-black uppercase">0 Data</span>
                     </div>
                     <div id="list-pinjam-active" class="space-y-4"></div>
@@ -229,7 +230,7 @@
             <!-- DATA ANGGOTA -->
             <section id="sec-anggota" class="hidden animate-in slide-in-from-right duration-300 space-y-6">
                 <div id="form-anggota" class="glass-card p-6 rounded-[32px] border-t-4 border-t-blue-600">
-                    <h4 class="font-extrabold text-slate-800 mb-5 text-sm">Daftarkan Siswa Baru</h4>
+                    <h4 class="font-extrabold text-slate-800 mb-5 text-sm">Daftarkan Anggota Baru</h4>
                     <div class="space-y-4">
                         <input type="text" id="add-member-name" placeholder="Nama Lengkap" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
                         <input type="text" id="add-member-class" placeholder="Kelas / Jurusan" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
@@ -284,7 +285,7 @@
             <!-- KATALOG BUKU -->
             <section id="sec-buku" class="hidden animate-in slide-in-from-right duration-300 space-y-6">
                 <button onclick="toggleElement('form-buku')" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold flex items-center justify-center gap-3 shadow-2xl">
-                    <i class="fas fa-plus-circle"></i> Tambah Koleksi Buku
+                    <i class="fas fa-plus-circle"></i> Tambah Buku Baru
                 </button>
                 
                 <div id="form-buku" class="hidden glass-card p-6 rounded-[32px] border-t-4 border-t-emerald-500">
