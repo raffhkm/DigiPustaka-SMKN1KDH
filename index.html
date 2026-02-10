@@ -249,38 +249,60 @@
             </section>
 
             <!-- LAYANAN PINJAM -->
-            <section id="sec-pinjaman" class="hidden animate-in slide-in-from-right duration-300">
-                <div class="glass-card p-6 rounded-[32px] space-y-6 border-t-4 border-t-blue-600">
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Pilih Anggota</label>
-                        <select id="loan-member-select" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-slate-100"></select>
-                    </div>
-                    <div class="space-y-2 relative">
-                        <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Cari Buku</label>
-                        <input type="text" id="search-loan-book" placeholder="Ketik judul buku..." class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-slate-100" onkeyup="filterLoanBooks()">
-                        <div id="loan-book-results" class="absolute w-full bg-white border mt-2 rounded-2xl shadow-2xl max-h-60 overflow-y-auto z-[200] hidden p-2"></div>
-                    </div>
-                    <div id="selected-book-display" class="p-5 bg-blue-50 border border-blue-100 rounded-2xl hidden flex items-center gap-3">
-                        <div class="w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center shadow-lg"><i class="fas fa-check"></i></div>
-                        <div>
-                            <p class="text-[10px] text-blue-500 font-black uppercase">Buku Terpilih</p>
-                            <p id="selected-book-text" class="text-sm font-extrabold text-blue-900 leading-tight"></p>
-                        </div>
-                    </div>
-                    <input type="hidden" id="selected-book-id">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                             <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Jumlah</label>
-                             <input type="number" id="loan-qty" value="1" min="1" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-slate-100">
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Batas Kembali</label>
-                            <input type="date" id="loan-due" class="w-full p-4 bg-slate-50 rounded-2xl outline-none text-xs border border-slate-100">
-                        </div>
-                    </div>
-                    <button onclick="processLoan()" class="w-full btn-primary text-white py-5 rounded-2xl font-black text-lg">Proses Peminjaman</button>
-                </div>
-            </section>
+       <section id="sec-pinjaman" class="hidden animate-in slide-in-from-right duration-300">
+    <div class="glass-card p-6 rounded-[32px] space-y-6 border-t-4 border-t-blue-600">
+        
+        <div class="space-y-2 relative">
+            <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Pilih Anggota</label>
+            <input type="text" id="search-loan-member" placeholder="Ketik nama anggota/kelas..." 
+                class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-slate-100" 
+                onkeyup="filterLoanMembers()">
+            <div id="loan-member-results" class="absolute w-full bg-white border mt-2 rounded-2xl shadow-2xl max-h-60 overflow-y-auto z-[201] hidden p-2"></div>
+        </div>
+
+        <div id="selected-member-display" class="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl hidden flex items-center gap-3">
+            <div class="w-10 h-10 bg-emerald-600 text-white rounded-lg flex items-center justify-center shadow-lg"><i class="fas fa-user-check"></i></div>
+            <div class="flex-1">
+                <p class="text-[10px] text-emerald-500 font-black uppercase">Anggota Terpilih</p>
+                <p id="selected-member-text" class="text-sm font-extrabold text-emerald-900 leading-tight"></p>
+            </div>
+            <button onclick="resetMemberSelection()" class="text-emerald-400 hover:text-emerald-600"><i class="fas fa-times-circle"></i></button>
+        </div>
+        <input type="hidden" id="selected-member-id">
+
+        <div class="space-y-2 relative">
+            <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Cari Buku</label>
+            <input type="text" id="search-loan-book" placeholder="Ketik judul buku..." 
+                class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-slate-100" 
+                onkeyup="filterLoanBooks()">
+            <div id="loan-book-results" class="absolute w-full bg-white border mt-2 rounded-2xl shadow-2xl max-h-60 overflow-y-auto z-[200] hidden p-2"></div>
+        </div>
+
+        <div id="selected-book-display" class="p-4 bg-blue-50 border border-blue-100 rounded-2xl hidden flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center shadow-lg"><i class="fas fa-check"></i></div>
+            <div class="flex-1">
+                <p class="text-[10px] text-blue-500 font-black uppercase">Buku Terpilih</p>
+                <p id="selected-book-text" class="text-sm font-extrabold text-blue-900 leading-tight"></p>
+            </div>
+            <button onclick="resetBookSelection()" class="text-blue-400 hover:text-blue-600"><i class="fas fa-times-circle"></i></button>
+        </div>
+        <input type="hidden" id="selected-book-id">
+
+        <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+                 <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Jumlah</label>
+                 <input type="number" id="loan-qty" value="1" min="1" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-slate-100">
+            </div>
+            <div class="space-y-2">
+                <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Batas Kembali</label>
+                <input type="date" id="loan-due" class="w-full p-4 bg-slate-50 rounded-2xl outline-none text-xs border border-slate-100">
+            </div>
+        </div>
+
+        <button onclick="processLoan()" class="w-full btn-primary text-white py-5 rounded-2xl font-black text-lg">Proses Peminjaman</button>
+    </div>
+</section>
+
 
             <!-- KATALOG BUKU -->
             <section id="sec-buku" class="hidden animate-in slide-in-from-right duration-300 space-y-6">
@@ -439,8 +461,7 @@
             renderBooks(state.books);
             renderHistory(state.history);
             
-            document.getElementById('loan-member-select').innerHTML = state.members.map(m => `<option value="${m.id}">${m.nama} (${m.kelas})</option>`).join('') || '<option disabled>Data anggota kosong</option>';
-            
+        
            updateLiveBanner();
         }
 
@@ -680,25 +701,63 @@ if(state.books.length > 0){
             document.getElementById('search-loan-book').value = "";
         }
 
-        function processLoan() {
-            const mId = document.getElementById('loan-member-select').value;
-            const bId = document.getElementById('selected-book-id').value;
-            const due = document.getElementById('loan-due').value;
-            const qty = parseInt(document.getElementById('loan-qty').value);
-            if(!bId || !due) return showToast("Pilih buku & tanggal!", true);
-            
-            const m = state.members.find(m => m.id == mId);
-            const b = state.books.find(b => b.id == bId);
-            
-            if(b.stok < qty) return showToast("Stok tidak cukup!", true);
+     function processLoan() {
+    // Ambil ID dari input hidden (hasil pilihan dari pencarian)
+    const mId = document.getElementById('selected-member-id').value;
+    const bId = document.getElementById('selected-book-id').value;
+    const due = document.getElementById('loan-due').value;
+    const qty = parseInt(document.getElementById('loan-qty').value);
 
-            state.loans.push({
-                id: Date.now(), namaAnggota: m.nama, kelas: m.kelas,
-                judulBuku: b.judul, jumlah: qty, tglKembali: due, status: 'Dipinjam'
-            });
-            b.stok -= qty;
-            nav('dashboard'); saveToCloud(); showToast("Peminjaman berhasil");
-        }
+    // 1. Validasi Input: Pastikan semua data sudah dipilih
+    if (!mId) return showToast("Pilih anggota terlebih dahulu!", true);
+    if (!bId) return showToast("Pilih buku terlebih dahulu!", true);
+    if (!due) return showToast("Tentukan batas waktu pengembalian!", true);
+    if (!qty || qty < 1) return showToast("Jumlah buku minimal 1!", true);
+
+    // 2. Cari data detail dari State
+    const m = state.members.find(member => member.id == mId);
+    const b = state.books.find(book => book.id == bId);
+
+    // 3. Validasi Stok Buku
+    if (b.stok < qty) {
+        return showToast(`Stok tidak cukup! Sisa stok: ${b.stok}`, true);
+    }
+
+    // 4. Proses Data (Update State)
+    const newLoan = {
+        id: Date.now(),
+        namaAnggota: m.nama,
+        kelas: m.kelas,
+        judulBuku: b.judul,
+        jumlah: qty,
+        tglPinjam: new Date().toISOString(), // Mencatat waktu pinjam otomatis
+        tglKembali: due,
+        status: 'Dipinjam'
+    };
+
+    state.loans.push(newLoan);
+    
+    // Kurangi stok buku secara otomatis
+    b.stok -= qty;
+
+    // 5. Finalisasi: Reset Form, Simpan, dan Kembali ke Dashboard
+    resetLoanForm();
+    saveToCloud(); 
+    nav('dashboard'); 
+    showToast("Peminjaman berhasil diproses!");
+}
+
+// Fungsi tambahan untuk membersihkan form setelah berhasil
+function resetLoanForm() {
+    document.getElementById('selected-member-id').value = "";
+    document.getElementById('selected-book-id').value = "";
+    document.getElementById('selected-member-display').classList.add('hidden');
+    document.getElementById('selected-book-display').classList.add('hidden');
+    document.getElementById('loan-due').value = "";
+    document.getElementById('loan-qty').value = "1";
+    document.getElementById('search-loan-member').value = "";
+    document.getElementById('search-loan-book').value = "";
+}
 
        function returnBook(id) {
     const loan = state.loans.find(l => l.id === id);
@@ -862,6 +921,101 @@ function clearAllHistory() {
         showToast("Semua riwayat telah dihapus");
     }
 }
+// --- LOGIK FILTER ANGGOTA ---
+function filterLoanMembers() {
+    const q = document.getElementById('search-loan-member').value.toLowerCase();
+    const res = document.getElementById('loan-member-results');
+    if(!q) return res.classList.add('hidden');
+    
+    const filtered = state.members.filter(m => m.nama.toLowerCase().includes(q) || m.kelas.toLowerCase().includes(q));
+    res.innerHTML = filtered.map(m => `
+        <div onclick="selectMemberForLoan(${m.id}, '${m.nama}', '${m.kelas}')" class="p-4 border-b hover:bg-emerald-50 text-sm font-bold flex justify-between items-center cursor-pointer">
+            <span>${m.nama}</span>
+            <span class="text-[10px] bg-slate-100 px-2 py-1 rounded">${m.kelas}</span>
+        </div>
+    `).join('');
+    res.classList.remove('hidden');
+}
+
+function selectMemberForLoan(id, nama, kelas) {
+    document.getElementById('selected-member-id').value = id;
+    document.getElementById('selected-member-text').innerText = `${nama} (${kelas})`;
+    document.getElementById('selected-member-display').classList.remove('hidden');
+    document.getElementById('loan-member-results').classList.add('hidden');
+    document.getElementById('search-loan-member').value = "";
+}
+
+function resetMemberSelection() {
+    document.getElementById('selected-member-id').value = "";
+    document.getElementById('selected-member-display').classList.add('hidden');
+}
+
+// --- LOGIK FILTER BUKU ---
+function filterLoanBooks() {
+    const q = document.getElementById('search-loan-book').value.toLowerCase();
+    const res = document.getElementById('loan-book-results');
+    if(!q) return res.classList.add('hidden');
+    
+    const filtered = state.books.filter(b => b.judul.toLowerCase().includes(q));
+    res.innerHTML = filtered.map(b => `
+        <div onclick="selectBookForLoan(${b.id}, '${b.judul}')" class="p-4 border-b hover:bg-blue-50 text-sm font-bold flex justify-between items-center cursor-pointer">
+            <span>${b.judul}</span>
+            <span class="text-[10px] ${b.stok > 0 ? 'text-emerald-600' : 'text-red-600'}">Stok: ${b.stok}</span>
+        </div>
+    `).join('');
+    res.classList.remove('hidden');
+}
+
+function selectBookForLoan(id, judul) {
+    document.getElementById('selected-book-id').value = id;
+    document.getElementById('selected-book-text').innerText = judul;
+    document.getElementById('selected-book-display').classList.remove('hidden');
+    document.getElementById('loan-book-results').classList.add('hidden');
+    document.getElementById('search-loan-book').value = "";
+}
+
+function resetBookSelection() {
+    document.getElementById('selected-book-id').value = "";
+    document.getElementById('selected-book-display').classList.add('hidden');
+}
+
+// --- FUNGSI PROSES PINJAM FINAL ---
+async function processLoan() {
+    const mId = document.getElementById('selected-member-id').value;
+    const bId = document.getElementById('selected-book-id').value;
+    const due = document.getElementById('loan-due').value;
+    const qty = parseInt(document.getElementById('loan-qty').value);
+
+    if(!mId || !bId || !due) return showToast("Data belum lengkap!", true);
+    
+    const m = state.members.find(m => m.id == mId);
+    const b = state.books.find(b => b.id == bId);
+    
+    if(b.stok < qty) return showToast("Stok tidak mencukupi!", true);
+
+    state.loans.push({
+        id: Date.now(),
+        namaAnggota: m.nama,
+        kelas: m.kelas,
+        judulBuku: b.judul,
+        jumlah: qty,
+        tglPinjam: new Date().toISOString(),
+        tglKembali: due,
+        status: 'Dipinjam'
+    });
+
+    b.stok -= qty;
+
+    // Bersihkan form
+    resetMemberSelection();
+    resetBookSelection();
+    document.getElementById('loan-due').value = "";
+    
+    await saveToCloud();
+    nav('dashboard');
+    showToast("Berhasil dipinjam!");
+}
+
 </script>
 </body>
 </html>
