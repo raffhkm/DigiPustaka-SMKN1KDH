@@ -107,7 +107,7 @@
     <div id="loadingOverlay" class="fixed inset-0 z-[2000] hidden bg-white/70 backdrop-blur-sm flex items-center justify-center">
         <div class="flex flex-col items-center">
             <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <p class="mt-4 font-bold text-slate-800 tracking-tight">Loading Cuy</p>
+            <p class="mt-4 font-bold text-slate-800 tracking-tight">Menyinkronkan...</p>
         </div>
     </div>
 
@@ -116,7 +116,7 @@
         <div class="w-full max-w-md animate-in fade-in zoom-in duration-500">
             <div class="text-center mb-10">
               <div class="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto shadow-2xl mb-4 overflow-hidden">
-    <img src="logo.jpg" alt="Logo DigiPustaka" class="w-24 h-24 object-cover">
+    <img src="logo.jpg" alt="Logo DigiPustaka" class="w-full h-full object-cover">
 </div>
                 <h1 class="text-4xl font-black text-white tracking-tight">Digi<span class="text-blue-400">Pustaka</span></h1>
                 <p class="text-slate-300 font-medium mt-2">Sistem Perpustakaan Digital</p> <p style="color: white;"> <small>by:raffhkm</small></p>
@@ -145,7 +145,7 @@
         <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white sticky top-0 z-[100] px-6 py-5 flex justify-between items-center border-b border-blue-500/30">
             <div class="flex items-center gap-4">
               <div class="w-11 h-11 bg-blue-50 rounded-2xl flex items-center justify-center shadow-inner overflow-hidden">
-    <img src="logo.jpg" alt="Logo" class="w-15 h-15 object-cover">
+    <img src="logo.jpg" alt="Logo" class="w-full h-full object-cover">
 </div>
                 <div>
                     <h2 id="pageTitle" class="text-lg font-extrabold text-white leading-none">Dashboard</h2>
@@ -177,13 +177,30 @@
         <main class="p-6">
             <!-- DASHBOARD SECTION -->
             <section id="sec-dashboard" class="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+                <div class="animate-in fade-in slide-in-from-bottom-2 duration-700 delay-150">
+    <button onclick="nav('tamu')" class="w-full bg-gradient-to-r from-purple-600 to-indigo-700 p-4 rounded-3xl text-white flex items-center justify-between shadow-xl shadow-purple-200 active:scale-95 transition-all mb-6">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                <i class="fas fa-address-book text-xl"></i>
+            </div>
+            <div class="text-left">
+                <p class="text-sm font-extrabold tracking-tight">Buku Tamu Pengunjung</p>
+                <p class="text-[10px] text-purple-100 font-medium">Klik untuk mencatat kehadiran siswa</p>
+            </div>
+        </div>
+        <div class="w-8 h-8 bg-black/10 rounded-full flex items-center justify-center">
+            <i class="fas fa-chevron-right text-[10px]"></i>
+        </div>
+    </button>
+</div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div class="glass-card p-5 rounded-3xl bg-gradient-to-br from-blue-600 to-blue-800 text-white">
                         <p class="text-[10px] text-blue-100 font-bold uppercase">Total Anggota</p>
                         <h3 id="stat-anggota" class="text-3xl font-black">0</h3>
                     </div>
                     <div class="glass-card p-5 rounded-3xl border-l-4 border-orange-500">
-                        <p class="text-[10px] text-slate-400 font-bold uppercase">Koleksi Buku</p>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase">Jumlah Buku</p>
                         <h3 id="stat-buku" class="text-3xl font-black text-slate-800">0</h3>
                     </div>
                 </div>
@@ -226,6 +243,29 @@
                     <div id="list-pinjam-active" class="space-y-4"></div>
                 </div>
             </section>
+<section id="sec-tamu" class="hidden animate-in slide-in-from-right duration-300 space-y-6">
+    <div class="glass-card p-6 rounded-[32px] border-t-4 border-t-purple-600">
+        <h4 class="font-extrabold text-slate-800 mb-5 text-sm">Input Kehadiran Siswa</h4>
+        <div class="space-y-4">
+            <input type="text" id="guest-name" placeholder="Nama Lengkap" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-slate-100 focus:bg-white focus:ring-2 focus:ring-purple-500 transition-all">
+            <input type="text" id="guest-class" placeholder="Kelas / Jurusan" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-slate-100 focus:bg-white focus:ring-2 focus:ring-purple-500 transition-all">
+            <select id="guest-purpose" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-slate-100 focus:bg-white">
+                <option value="Membaca">Hanya Membaca</option>
+                <option value="Tugas/Kelompok">Mengerjakan Tugas</option>
+                <option value="Pinjam/Kembali">Urusan Peminjaman</option>
+                <option value="Lainnya">Lainnya</option>
+            </select>
+            <button onclick="addVisitor()" class="w-full bg-purple-600 text-white py-4 rounded-2xl font-black shadow-lg shadow-purple-200 active:scale-[0.98] transition-all">Simpan Kunjungan</button>
+        </div>
+    </div>
+
+    <div class="flex justify-between items-center">
+        <h4 class="font-extrabold text-slate-800">Daftar Hadir Hari Ini</h4>
+        <span id="visitor-count-badge" class="bg-purple-100 text-purple-600 text-[10px] px-2 py-1 rounded-lg font-black uppercase">0 Orang</span>
+    </div>
+    
+    <div id="list-visitors" class="space-y-3 pb-24"></div>
+</section>
 
             <!-- DATA ANGGOTA -->
             <section id="sec-anggota" class="hidden animate-in slide-in-from-right duration-300 space-y-6">
@@ -320,7 +360,7 @@
                         </select>
                         <input type="number" id="book-stock" placeholder="Stok Awal" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
                         <input type="text" id="book-img" placeholder="Link Gambar URL (Opsional)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
-                        <button onclick="saveBook()" class="w-full btn-primary text-white py-4 rounded-2xl font-bold">Simpan ke Katalog</button>
+                        <button onclick="saveBook()" class="w-full btn-primary text-white py-4 rounded-2xl font-bold">Simpan </button>
                     </div>
                 </div>
 
@@ -336,7 +376,7 @@
     <button class="tab-btn bg-slate-200 text-slate-700 px-4 py-2 rounded-2xl font-bold" data-cat="Kamus">Kamus</button>
 </div>
 
-<div id="list-books"></div>
+
                 <div id="list-books" class="grid grid-cols-1 gap-6"></div>
             </section>
 
@@ -388,13 +428,14 @@
     </div>
 
     <script>
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztnF18v4m2fdX0cvhG5EgW7uD7K09j-24jOCIioVJOd_Leb3ZnjOduLa4-V0-JYbIr/exec"; 
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3FmPrVVVGbFWHK7Yp8iMQh-BS5U9iuA2fsTXWQLE9kijWtDx_ns3ti5_ickFUGZA7/exec"; 
 
         let state = {
             books: [],
             members: [],
             loans: [],
-            history: []
+            history: [],
+            visitors: []
         };
 
         const DENDA_PER_HARI = 2000;
@@ -423,11 +464,12 @@
                 const response = await fetch(APPS_SCRIPT_URL);
                 const data = await response.json();
                 state = {
-                    books: data.buku || [],
-                    members: data.anggota || [],
-                    loans: data.pinjaman || [],
-                    history: data.riwayat || []
-                };
+            books: data.buku || [],
+            members: data.anggota || [],
+            loans: data.pinjaman || [],
+            history: data.riwayat || [],
+            visitors: data.tamu || [] // <--- Tambahkan baris ini
+        };
                 refreshUI();
             } catch(e) { showToast("Gagal memuat data dari cloud.", true); }
             finally { document.getElementById('loadingOverlay').classList.add('hidden'); }
@@ -440,80 +482,146 @@
             const clickedBtn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.getAttribute('onclick').includes(page));
             if(clickedBtn) clickedBtn.classList.add('nav-active');
             
-            const titles = { dashboard: 'Dashboard', anggota: 'Data Anggota', pinjaman: 'Layanan Pinjam', buku: 'Katalog Koleksi', riwayat: 'Laporan Riwayat' };
+            // Di dalam function nav(page)
+const titles = { 
+    dashboard: 'Dashboard', 
+    anggota: 'Data Anggota & Kelas', 
+    pinjaman: 'Layanan Pinjam', 
+    buku: 'Daftar Buku', 
+    riwayat: 'Laporan Riwayat',
+    tamu: 'Buku Tamu' // Tambah ini
+};
+
+// Di dalam function refreshUI()
+// Pastikan panggil renderVisitors(); agar data tetap muncul saat refresh
+
             document.getElementById('pageTitle').innerText = titles[page];
             refreshUI();
         }
 
-        function refreshUI() {
-            document.getElementById('stat-anggota').innerText = state.members.length;
-            document.getElementById('stat-buku').innerText = state.books.length;
-            
-            document.getElementById('cat-pelajaran').innerText = state.books.filter(b => b.kategori === 'Pelajaran').length;
-            document.getElementById('cat-novel').innerText = state.books.filter(b => b.kategori === 'Novel').length;
-            document.getElementById('cat-kamus').innerText = state.books.filter(b => b.kategori === 'Kamus').length;
+      function refreshUI() {
+    // 1. Update Statistik di Dashboard
+    document.getElementById('stat-anggota').innerText = state.members.length;
+    document.getElementById('stat-buku').innerText = state.books.length;
+    
+    document.getElementById('cat-pelajaran').innerText = state.books.filter(b => b.kategori === 'Pelajaran').length;
+    document.getElementById('cat-novel').innerText = state.books.filter(b => b.kategori === 'Novel').length;
+    document.getElementById('cat-kamus').innerText = state.books.filter(b => b.kategori === 'Kamus').length;
 
-            const activeLoans = state.loans.filter(l => l.status === 'Dipinjam');
-            document.getElementById('loan-count-badge').innerText = `${activeLoans.length} Data`;
-            
-            renderLoans(activeLoans);
-            renderMembers(state.members);
-            renderBooks(state.books);
-            renderHistory(state.history);
-            
-        
-           updateLiveBanner();
-        }
+    // 2. Cek Tab Kategori yang sedang aktif di bagian Buku
+    // Kita cari tombol yang punya warna biru (tanda sedang aktif)
+    const activeTab = document.querySelector('.tab-btn.bg-blue-600');
+    const currentCat = activeTab ? activeTab.getAttribute('data-cat') : 'Pelajaran';
 
-        // --- STOCK UPDATE LOGIC ---
-        function changeStock(bookId, delta) {
-            const book = state.books.find(b => b.id === bookId);
-            if (!book) return;
-            
-            const newStock = parseInt(book.stok) + delta;
-            if (newStock < 0) return showToast("Stok tidak bisa kurang dari 0", true);
-            
-            book.stok = newStock;
-            
-            // UI Visual Feedback
-            const stockValEl = document.getElementById(`stock-val-${bookId}`);
-            if(stockValEl) {
-                stockValEl.innerText = newStock;
-                stockValEl.classList.add('updated-flash');
-                setTimeout(() => stockValEl.classList.remove('updated-flash'), 800);
-            }
+    // 3. Render Semua Komponen UI
+    const activeLoans = state.loans.filter(l => l.status === 'Dipinjam');
+    document.getElementById('loan-count-badge').innerText = `${activeLoans.length} Data`;
+    
+    renderLoans(activeLoans);
+    renderMembers(state.members);
+    renderHistory(state.history);
+    renderVisitors(); 
+    updateLiveBanner();
 
-            // Sync with backend (debounce would be better, but simple save works for now)
-            saveToCloud();
-        }
+    // 4. Render Buku berdasarkan kategori yang sedang dipilih
+    renderBooks(state.books, currentCat);
+}
 
-        // --- RENDERING ---
-        function renderBooks(list) {
-            document.getElementById('list-books').innerHTML = list.map(b => `
-                <div class="glass-card overflow-hidden rounded-[32px] flex">
-                    <div class="w-28 h-40 bg-slate-100 flex-shrink-0 relative overflow-hidden">
-                        <img src="${b.fotoUrl || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300'}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300'">
-                        <div class="absolute top-2 left-2 px-2 py-0.5 bg-white/90 rounded-full text-[8px] font-black text-blue-600 uppercase shadow-sm">${b.kategori}</div>
-                    </div>
-                    <div class="p-4 flex-1 flex flex-col justify-between">
-                        <div>
-                            <h4 class="font-extrabold text-slate-800 text-sm mt-1 leading-tight line-clamp-2">${b.judul}</h4>
-                            <div class="flex items-center justify-between mt-3 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                                <button onclick="changeStock(${b.id}, -1)" class="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-red-500 active:scale-90 transition-all"><i class="fas fa-minus text-[10px]"></i></button>
-                                <div class="text-center px-2">
-                                    <p class="text-[8px] text-slate-400 font-bold uppercase leading-none mb-1">Stok</p>
-                                    <span id="stock-val-${b.id}" class="text-sm font-black text-slate-800">${b.stok}</span>
-                                </div>
-                                <button onclick="changeStock(${b.id}, 1)" class="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-emerald-500 active:scale-90 transition-all"><i class="fas fa-plus text-[10px]"></i></button>
-                            </div>
+// Pastikan fungsi renderBooks kamu juga diupdate menjadi seperti ini:
+function renderBooks(list, category = 'Pelajaran') {
+    const container = document.getElementById('list-books');
+    
+    // Filter data berdasarkan kategori yang dipilih
+    const filtered = list.filter(b => b.kategori === category);
+
+    container.innerHTML = filtered.map(b => `
+        <div class="glass-card overflow-hidden rounded-[32px] flex mb-4 animate-in fade-in duration-300">
+            <div class="w-28 h-40 bg-slate-100 flex-shrink-0 relative overflow-hidden">
+                <img src="${b.fotoUrl || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300'}" 
+                     class="w-full h-full object-cover" 
+                     onerror="this.src='https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300'">
+                <div class="absolute top-2 left-2 px-2 py-0.5 bg-white/90 rounded-full text-[8px] font-black text-blue-600 uppercase shadow-sm">${b.kategori}</div>
+            </div>
+            <div class="p-4 flex-1 flex flex-col justify-between">
+                <div>
+                    <h4 class="font-extrabold text-slate-800 text-sm mt-1 leading-tight line-clamp-2">${b.judul}</h4>
+                    <div class="flex items-center justify-between mt-3 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                        <button onclick="changeStock(${b.id}, -1)" class="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-red-500 active:scale-90 transition-all"><i class="fas fa-minus text-[10px]"></i></button>
+                        <div class="text-center px-2">
+                            <p class="text-[8px] text-slate-400 font-bold uppercase leading-none mb-1">Stok</p>
+                            <span id="stock-val-${b.id}" class="text-sm font-black text-slate-800">${b.stok}</span>
                         </div>
-                        <div class="flex gap-2 mt-3">
-                            <button onclick="deleteBook(${b.id})" class="text-red-300 hover:text-red-500 text-[10px] font-bold uppercase transition-all px-2 py-1"><i class="fas fa-trash-can mr-1"></i> Hapus</button>
-                        </div>
+                        <button onclick="changeStock(${b.id}, 1)" class="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-emerald-500 active:scale-90 transition-all"><i class="fas fa-plus text-[10px]"></i></button>
                     </div>
                 </div>
-            `).join('') || '<div class="text-center py-10 opacity-30 text-xs italic">Katalog kosong</div>';
-        }
+                <div class="flex gap-2 mt-3">
+                    <button onclick="deleteBook(${b.id})" class="text-red-300 hover:text-red-500 text-[10px] font-bold uppercase transition-all px-2 py-1"><i class="fas fa-trash-can mr-1"></i> Hapus</button>
+                </div>
+            </div>
+        </div>
+    `).join('') || '<div class="text-center py-10 opacity-30 text-xs italic">Belum ada buku di kategori ini</div>';
+}
+
+        // --- RENDERING ---
+        // Fungsi Render Utama yang mendukung filter kategori
+function renderBooks(list, category = 'Pelajaran') {
+    const container = document.getElementById('list-books');
+    
+    // Filter list berdasarkan kategori jika category dikirim
+    const filteredList = list.filter(b => b.kategori === category);
+
+    container.innerHTML = filteredList.map(b => `
+        <div class="glass-card overflow-hidden rounded-[32px] flex mb-4 animate-in fade-in duration-300">
+            <div class="w-28 h-40 bg-slate-100 flex-shrink-0 relative overflow-hidden">
+                <img src="${b.fotoUrl || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300'}" 
+                     class="w-full h-full object-cover" 
+                     onerror="this.src='https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300'">
+                <div class="absolute top-2 left-2 px-2 py-0.5 bg-white/90 rounded-full text-[8px] font-black text-blue-600 uppercase shadow-sm">${b.kategori}</div>
+            </div>
+            <div class="p-4 flex-1 flex flex-col justify-between">
+                <div>
+                    <h4 class="font-extrabold text-slate-800 text-sm mt-1 leading-tight line-clamp-2">${b.judul}</h4>
+                    <div class="flex items-center justify-between mt-3 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                        <button onclick="changeStock(${b.id}, -1)" class="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-red-500 active:scale-90 transition-all">
+                            <i class="fas fa-minus text-[10px]"></i>
+                        </button>
+                        <div class="text-center px-2">
+                            <p class="text-[8px] text-slate-400 font-bold uppercase leading-none mb-1">Stok</p>
+                            <span id="stock-val-${b.id}" class="text-sm font-black text-slate-800">${b.stok}</span>
+                        </div>
+                        <button onclick="changeStock(${b.id}, 1)" class="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-emerald-500 active:scale-90 transition-all">
+                            <i class="fas fa-plus text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-3">
+                    <button onclick="deleteBook(${b.id})" class="text-red-300 hover:text-red-500 text-[10px] font-bold uppercase transition-all px-2 py-1">
+                        <i class="fas fa-trash-can mr-1"></i> Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('') || `<div class="text-center py-10 opacity-30 text-xs italic">Belum ada buku di kategori ini</div>`;
+}
+
+// Inisialisasi Event Listener untuk Tab (Pindahkan ke luar atau pastikan dipanggil sekali)
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Reset Style Tombol
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('bg-blue-600','text-white');
+            b.classList.add('bg-slate-200','text-slate-700');
+        });
+        // Aktifkan Tombol Klik
+        this.classList.add('bg-blue-600','text-white');
+        this.classList.remove('bg-slate-200','text-slate-700');
+
+        // Render Ulang
+        const cat = this.getAttribute('data-cat');
+        renderBooks(state.books, cat);
+    });
+});
+
 // Render buku sesuai kategori terpilih
 function renderBooksByCategory(cat) {
     const booksInCat = state.books.filter(b => b.kategori === cat);
@@ -1019,6 +1127,58 @@ async function processLoan() {
     await saveToCloud();
     nav('dashboard');
     showToast("Berhasil dipinjam!");
+}
+// Tambahkan di let state paling atas
+// let state = { ..., visitors: [] };
+
+function addVisitor() {
+    const name = document.getElementById('guest-name').value;
+    const cls = document.getElementById('guest-class').value;
+    const purp = document.getElementById('guest-purpose').value;
+
+    if(!name || !cls) return showToast("Nama dan Kelas wajib diisi!", true);
+
+    const newVisitor = {
+        id: Date.now(),
+        nama: name,
+        kelas: cls,
+        tujuan: purp,
+        waktu: new Date().toISOString()
+    };
+
+    state.visitors.unshift(newVisitor); // Tambah ke paling atas
+    
+    // Reset form
+    document.getElementById('guest-name').value = "";
+    document.getElementById('guest-class').value = "";
+    
+    renderVisitors();
+    saveToCloud();
+    showToast("Data kunjungan tersimpan!");
+}
+
+function renderVisitors() {
+    const container = document.getElementById('list-visitors');
+    const badge = document.getElementById('visitor-count-badge');
+    
+    // Filter hanya pengunjung hari ini
+    const today = new Date().toLocaleDateString('id-ID');
+    const todayData = state.visitors.filter(v => new Date(v.waktu).toLocaleDateString('id-ID') === today);
+    
+    badge.innerText = `${todayData.length} Orang`;
+
+    container.innerHTML = todayData.map(v => `
+        <div class="glass-card p-4 rounded-2xl flex justify-between items-center border-l-4 border-purple-500 animate-in fade-in slide-in-from-left duration-300">
+            <div>
+                <p class="font-extrabold text-slate-800 text-sm leading-tight">${v.nama}</p>
+                <p class="text-[10px] text-slate-400 font-bold uppercase mt-1">${v.kelas} • <span class="text-purple-500">${v.tujuan}</span></p>
+            </div>
+            <div class="text-right">
+                <p class="text-[10px] font-black text-slate-300 uppercase leading-none">Pukul</p>
+                <p class="text-xs font-black text-slate-600">${new Date(v.waktu).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</p>
+            </div>
+        </div>
+    `).join('') || '<div class="text-center py-10 opacity-30 text-xs italic">Belum ada pengunjung hari ini</div>';
 }
 
 </script>
