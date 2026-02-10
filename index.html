@@ -761,12 +761,15 @@ function resetLoanForm() {
 
        function returnBook(id) {
     const loan = state.loans.find(l => l.id === id);
+    if (!loan) return;
 
     const due = new Date(loan.tglKembali);
     const now = new Date();
 
-    let denda = 0;
+    // Pastikan tglPinjam mengambil dari data pinjaman, bukan jam sekarang
+    const tanggalAsliPinjam = loan.tglPinjam; 
 
+    let denda = 0;
     const dueDateOnly = new Date(due);
     const nowDateOnly = new Date(now);
     dueDateOnly.setHours(0,0,0,0);
@@ -777,11 +780,12 @@ function resetLoanForm() {
         denda = diffDays * DENDA_PER_HARI;
     }
 
+    // Masukkan ke riwayat dengan tglPinjam yang benar
     state.history.unshift({
         nama: loan.namaAnggota,
         buku: loan.judulBuku,
-        tglPinjam: loan.tglPinjam || now.toISOString(),
-        tglKembali: now.toISOString(),
+        tglPinjam: tanggalAsliPinjam, // Menggunakan data asli saat pencatatan pinjam
+        tglKembali: now.toISOString(), // Waktu pengembalian adalah SEKARANG
         denda: denda
     });
 
@@ -794,6 +798,7 @@ function resetLoanForm() {
     saveToCloud();
     showToast("Buku telah dikembalikan");
 }
+
 function renderHistory(list) {
     document.getElementById('list-history').innerHTML =
     list.map(h => {
