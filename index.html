@@ -188,10 +188,12 @@
                 <p class="text-[10px] text-purple-100 font-medium">Klik untuk mencatat kehadiran tamu pengunjung</p>
             </div>
         </div>
+        
         <div class="w-8 h-8 bg-black/10 rounded-full flex items-center justify-center">
             <i class="fas fa-chevron-right text-[10px]"></i>
         </div>
     </button>
+  
 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -258,7 +260,8 @@
             <button onclick="addVisitor()" class="w-full bg-purple-600 text-white py-4 rounded-2xl font-black shadow-lg shadow-purple-200 active:scale-[0.98] transition-all">Simpan Kunjungan</button>
         </div>
     </div>
-
+ <div class="flex justify-between items-center">
+    <h4 class="font-extrabold text-slate-800">Daftar Hadir</h4>
     <div class="flex justify-between items-center">
         <h4 class="font-extrabold text-slate-800">Daftar Hadir Hari Ini</h4>
         <span id="visitor-count-badge" class="bg-purple-100 text-purple-600 text-[10px] px-2 py-1 rounded-lg font-black uppercase">0 Orang</span>
@@ -1161,24 +1164,88 @@ function renderVisitors() {
     const container = document.getElementById('list-visitors');
     const badge = document.getElementById('visitor-count-badge');
     
-    // Filter hanya pengunjung hari ini
-    const today = new Date().toLocaleDateString('id-ID');
-    const todayData = state.visitors.filter(v => new Date(v.waktu).toLocaleDateString('id-ID') === today);
+    // Urutkan dari yang terbaru
+    const sortedVisitors = state.visitors.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
     
-    badge.innerText = `${todayData.length} Orang`;
+    badge.innerText = `${sortedVisitors.length} Total Kunjungan`;
 
-    container.innerHTML = todayData.map(v => `
-        <div class="glass-card p-4 rounded-2xl flex justify-between items-center border-l-4 border-purple-500 animate-in fade-in slide-in-from-left duration-300">
-            <div>
-                <p class="font-extrabold text-slate-800 text-sm leading-tight">${v.nama}</p>
-                <p class="text-[10px] text-slate-400 font-bold uppercase mt-1">${v.kelas} • <span class="text-purple-500">${v.tujuan}</span></p>
+    container.innerHTML = sortedVisitors.map(v => `
+        <div class="glass-card p-4 rounded-2xl flex justify-between items-center border-l-4 border-purple-500 hover:shadow-md transition-all group">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-user-clock text-xs"></i>
+                </div>
+                <div>
+                    <p class="font-extrabold text-slate-800 text-sm leading-tight">${v.nama}</p>
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                        <span class="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-bold uppercase">${v.kelas}</span>
+                        <span class="text-[9px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded font-bold uppercase">${v.tujuan}</span>
+                    </div>
+                    <p class="text-[9px] text-slate-400 font-medium mt-1">
+                        <i class="far fa-calendar-alt mr-1"></i> ${formatTanggalJamID(v.waktu)}
+                    </p>
+                </div>
             </div>
-            <div class="text-right">
-                <p class="text-[10px] font-black text-slate-300 uppercase leading-none">Pukul</p>
-                <p class="text-xs font-black text-slate-600">${new Date(v.waktu).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</p>
+            
+            <div class="flex flex-col items-end gap-2">
+                <button onclick="deleteVisitor(${v.id})" class="w-8 h-8 flex items-center justify-center text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                    <i class="fas fa-trash-alt text-xs"></i>
+                </button>
             </div>
         </div>
-    `).join('') || '<div class="text-center py-10 opacity-30 text-xs italic">Belum ada pengunjung hari ini</div>';
+    `).join('') || '<div class="text-center py-10 opacity-30 text-xs italic">Belum ada data kunjungan</div>';
+}
+
+function deleteVisitor(id) {
+    if(confirm("Hapus data kunjungan ini?")) {
+        state.visitors = state.visitors.filter(v => v.id !== id);
+        renderVisitors();
+        saveToCloud();
+        showToast("Data kunjungan dihapus", true);
+    }
+}
+function deleteVisitor(id) {
+    if(confirm("Hapus data kunjungan ini?")) {
+        state.visitors = state.visitors.filter(v => v.id !== id);
+        renderVisitors();
+        saveToCloud();
+        showToast("Data kunjungan dihapus", true);
+    }
+}
+// FUNGSI UNTUK TAMBAH/KURANG STOK
+function changeStock(id, delta) {
+    // 1. Cari bukunya di state
+    const book = state.books.find(b => b.id === id);
+    
+    if (book) {
+        // 2. Update stoknya (pastikan tidak minus)
+        const newStock = parseInt(book.stok) + delta;
+        if (newStock < 0) {
+            showToast("Stok tidak bisa kurang dari 0", true);
+            return;
+        }
+        
+        book.stok = newStock;
+
+        // 3. Update angka di layar secara langsung agar cepat (Lampu kilat)
+        const stockEl = document.getElementById(`stock-val-${id}`);
+        if (stockEl) {
+            stockEl.innerText = book.stok;
+            stockEl.parentElement.parentElement.classList.add('updated-flash');
+            setTimeout(() => {
+                stockEl.parentElement.parentElement.classList.remove('updated-flash');
+            }, 800);
+        }
+
+        // 4. Simpan ke cloud dan refresh statistik dashboard
+        saveToCloud();
+        
+        // Update angka di dashboard tanpa pindah halaman
+        document.getElementById('stat-buku').innerText = state.books.length;
+        document.getElementById('cat-pelajaran').innerText = state.books.filter(b => b.kategori === 'Pelajaran').length;
+        document.getElementById('cat-novel').innerText = state.books.filter(b => b.kategori === 'Novel').length;
+        document.getElementById('cat-kamus').innerText = state.books.filter(b => b.kategori === 'Kamus').length;
+    }
 }
 
 </script>
