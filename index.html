@@ -782,15 +782,34 @@ if(state.books.length > 0){
         }
 
         function saveBook() {
-            const j = document.getElementById('book-title').value;
-            const k = document.getElementById('book-cat').value;
-            const s = document.getElementById('book-stock').value;
-            const f = document.getElementById('book-img').value;
-            if(!j || !s) return showToast("Lengkapi data buku", true);
-            state.books.push({id: Date.now(), judul: j, kategori: k, stok: parseInt(s), fotoUrl: f});
-            toggleElement('form-buku');
-            refreshUI(); saveToCloud(); showToast("Buku ditambahkan");
-        }
+    const j = document.getElementById('book-title').value;
+    const k = document.getElementById('book-cat').value;
+    const s = document.getElementById('book-stock').value;
+    const f = document.getElementById('book-img').value;
+
+    if(!j || !s) return showToast("Lengkapi data buku", true);
+
+    // Menyimpan data ke state
+    state.books.push({
+        id: Date.now(), 
+        judul: j, 
+        kategori: k, 
+        stok: parseInt(s), 
+        fotoUrl: f
+    });
+
+    // --- BAGIAN RESET INPUT (TAMBAHKAN INI) ---
+    document.getElementById('book-title').value = "";
+    document.getElementById('book-stock').value = "";
+    document.getElementById('book-img').value = "";
+    document.getElementById('book-cat').selectedIndex = 0; // Kembali ke pilihan pertama
+    // ------------------------------------------
+
+    toggleElement('form-buku'); // Menutup form
+    refreshUI(); 
+    saveToCloud(); 
+    showToast("Buku ditambahkan");
+}
 
         function filterLoanBooks() {
             const q = document.getElementById('search-loan-book').value.toLowerCase();
