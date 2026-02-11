@@ -319,7 +319,7 @@
 
   <script>
     // --- KONFIGURASI API ---
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyTREkp9A-iSt0GthEzEOUBHcLWwnWQyJ-r0ihsEFKsRqubNdNgupNRafx-U95cfox/exec"; 
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3FmPrVVVGbFWHK7Yp8iMQh-BS5U9iuA2fsTXWQLE9kijWtDx_ns3ti5_ickFUGZA7/exec"; 
 
     let state = {
         books: [],
@@ -356,35 +356,39 @@
     }
 
     // --- AUTH & LOGIN ---
-   async function handleLoginSiswa() {
+  async function handleLoginSiswa() {
     const name = document.getElementById('stu-name').value.trim();
     const cls = document.getElementById('stu-class').value.trim();
     const purpose = document.getElementById('stu-purpose').value;
 
     if (!name || !cls) return showToast("Mohon isi Nama & Kelas!", true);
 
-    // 1. Simpan ke variabel lokal agar UI berubah
-    currentStudent = { nama: name, kelas: cls };
-    
-    // 2. Buat objek kunjungan (sesuaikan key dengan Apps Script: id, nama, kelas, tujuan, waktu)
-    const newVisitor = {
-        id: Date.now(),
-        nama: name,
-        kelas: cls,
-        tujuan: purpose, // Pastikan kuncinya 'tujuan' bukan 'purpose'
-        waktu: new Date().toLocaleString('id-ID')
-    };
-
-    // 3. Masukkan ke state
-    if (!state.visitors) state.visitors = [];
-    state.visitors.push(newVisitor);
-
-    // Tampilkan loading
     document.getElementById('loadingOverlay').classList.remove('hidden');
-    document.querySelector('#loadingOverlay p').innerText = "Mencatat Kehadiran...";
+    document.querySelector('#loadingOverlay p').innerText = "Sinkronisasi Data...";
 
     try {
-        // 4. Kirim ke Cloud
+        // AMBIL DATA TERBARU DULU (Agar data buku tidak hilang)
+        const response = await fetch(APPS_SCRIPT_URL);
+        const cloudData = await response.json();
+        
+        // Update state lokal dengan data dari cloud
+        state.books = cloudData.buku || [];
+        state.loans = cloudData.pinjaman || [];
+        state.history = cloudData.riwayat || [];
+        state.visitors = cloudData.tamu || [];
+
+        // Baru tambahkan kunjungan baru
+        currentStudent = { nama: name, kelas: cls };
+        const newVisitor = {
+            id: Date.now(),
+            nama: name,
+            kelas: cls,
+            tujuan: purpose,
+            waktu: new Date().toLocaleString('id-ID')
+        };
+        state.visitors.push(newVisitor);
+
+        // Kirim balik ke cloud (Data buku sudah ikut terkirim kembali, jadi tidak hilang)
         await saveToCloud();
         
         // Pindah ke App Utama
@@ -393,16 +397,69 @@
         document.getElementById('welcomeName').innerText = `Halo, ${name.split(' ')[0]}!`;
         document.getElementById('welcomeClass').innerText = cls;
 
-        // 5. Muat ulang data untuk sinkronisasi terakhir
-        await loadDataFromCloud();
-        
+        refreshSiswaUI();
         showToast("Kehadiran berhasil dicatat!");
     } catch(e) {
         console.error(e);
-        showToast("Gagal sinkronisasi ke cloud", true);
+        showToast("Gagal terhubung ke server", true);
     } finally {
         document.getElementById('loadingOverlay').classList.add('hidden');
     }
+}
+// --- FUNGSI PENGEMBALIAN BUKU ---
+async function studentReturnBook(id) {
+    // Cari data pinjaman berdasarkan ID
+    const loanIndex = state.loans.findIndex(l => l.id === id);
+    if (loanIndex === -1) return;
+
+    const loan = state.loans[loanIndex];
+
+    openModal({
+        title: "Kembalikan Buku?",
+        desc: `Apakah kamu ingin mengembalikan "${loan.judulBuku}" sekarang?`,
+        onConfirm: async () => {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.querySelector('#loadingOverlay p').innerText = "Memproses Pengembalian...";
+
+            try {
+                // 1. Tambahkan ke Riwayat
+                const historyEntry = {
+                    id: Date.now(),
+                    nama: loan.namaAnggota,
+                    buku: loan.judulBuku,
+                    tglPinjam: loan.tglPinjam,
+                    tglKembali: new Date().toISOString(),
+                    status: "Selesai"
+                };
+                state.history.unshift(historyEntry);
+
+                // 2. Kembalikan Stok Buku
+                const book = state.books.find(b => b.judul === loan.judulBuku);
+                if (book) {
+                    book.stok = parseInt(book.stok) + parseInt(loan.jumlah);
+                }
+
+                // 3. Hapus dari daftar Pinjaman Aktif
+                state.loans.splice(loanIndex, 1);
+
+                // 4. Simpan ke Cloud
+                await saveToCloud();
+                
+                // Beri jeda sedikit agar Google Sheets selesai menulis
+                setTimeout(async () => {
+                    await loadDataFromCloud();
+                    playDing();
+                    showToast("Buku berhasil dikembalikan!");
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                }, 1000);
+
+            } catch (error) {
+                console.error(error);
+                showToast("Terjadi kesalahan saat mengembalikan", true);
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }
+        }
+    });
 }
 
     function logoutSiswa() {
@@ -442,20 +499,23 @@
         }
     }
 
-    async function saveToCloud() {
-    // Hapus pengecekan state.books agar data tetap terkirim meski buku kosong
+   async function saveToCloud() {
     try {
         await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors', // Tetap gunakan no-cors untuk Apps Script
+            mode: 'no-cors', // Apps Script butuh ini agar tidak kena CORS error
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(state)
         });
-        console.log("Data synced to cloud");
+        // Karena no-cors, kita tidak bisa baca respon, 
+        // tapi jika sampai ke baris ini tanpa throw error berat, kita anggap aman.
+        console.log("Data dikirim ke server...");
+        return true; 
     } catch(e) { 
-        console.error("Sync Error", e); 
+        console.error("Sync Error", e);
+        throw e;
     }
 }
 
@@ -467,23 +527,42 @@
         const pinjam = new Date(l.tglPinjam);
         const today = new Date();
         today.setHours(0,0,0,0);
+        
+        // Hitung selisih hari
         const diff = Math.ceil((due - today) / 86400000);
         
-        let colorClass = diff < 0 ? 'border-red-500' : (diff <= 1 ? 'border-amber-500' : 'border-blue-500');
+        // Logika Teks dan Warna
+        let statusText = "";
+        let colorClass = "";
         
-        // Format Tanggal & Jam Pinjam
+        if (diff < 0) {
+            // Jika telat (angka negatif)
+            statusText = `TELAT ${Math.abs(diff)} HARI`; // Math.abs membuang tanda minus (-)
+            colorClass = "border-red-500 bg-red-100 text-red-600";
+        } else if (diff === 0) {
+            // Jika hari ini batasnya
+            statusText = "TERAKHIR HARI INI";
+            colorClass = "border-amber-500 bg-amber-100 text-amber-600";
+        } else {
+            // Jika masih ada sisa waktu
+            statusText = `SISA ${diff} HARI`;
+            colorClass = "border-blue-500 bg-emerald-100 text-emerald-600";
+        }
+
+        const borderClass = diff < 0 ? 'border-red-500' : (diff <= 1 ? 'border-amber-500' : 'border-blue-500');
+        
         const formatWaktu = pinjam.toLocaleDateString('id-ID', { 
             day: 'numeric', month: 'long', year: 'numeric' 
         }) + ' ' + pinjam.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
         return `
-        <div class="glass-card p-6 rounded-[35px] border-l-[10px] ${colorClass} animate-slide-up shadow-md relative overflow-hidden">
+        <div class="glass-card p-6 rounded-[35px] border-l-[10px] ${borderClass} animate-slide-up shadow-md relative overflow-hidden">
             <div class="flex justify-between items-start mb-3">
                 <div class="flex-1">
-                    <h5 class="font-extrabold text-lg text-slate-800 leading-tight">${l.judulBuku} <span class="text-slate-400 font-medium text-xs">Okr</span></h5>
+                    <h5 class="font-extrabold text-lg text-slate-800 leading-tight">${l.judulBuku}</h5>
                     <div class="flex items-center gap-2 mt-1 text-blue-600">
                          <i class="fas fa-book text-[10px]"></i>
-                         <span class="text-[11px] font-black uppercase tracking-wider">JEJE</span>
+                         <span class="text-[11px] font-black uppercase tracking-wider">Koleksi Digital</span>
                     </div>
                 </div>
                 <div class="flex gap-2">
@@ -496,8 +575,8 @@
 
             <div class="flex gap-2 mb-4">
                 <span class="bg-blue-100 text-blue-700 text-[10px] px-3 py-1 rounded-lg font-black">${l.jumlah} BUKU</span>
-                <span class="${diff < 0 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'} text-[10px] px-3 py-1 rounded-lg font-black flex items-center gap-1">
-                    <i class="far fa-clock"></i> SISA ${diff < 0 ? 'TELAT' : diff} HARI
+                <span class="${colorClass} text-[10px] px-3 py-1 rounded-lg font-black flex items-center gap-1">
+                    <i class="far fa-clock"></i> ${statusText}
                 </span>
             </div>
 
@@ -512,6 +591,7 @@
         </div>`;
     }).join('') || `<div class="text-center py-8 opacity-40 text-xs italic font-medium">Tidak ada pinjaman aktif</div>`;
 }
+
 // Membuka Modal Edit
 function openEditModal(id) {
     const loan = state.loans.find(l => l.id === id);
@@ -538,6 +618,7 @@ function adjustEditQty(val) {
 }
 
 // Simpan Perubahan
+// Simpan Perubahan Edit Pinjaman
 async function confirmEditLoan() {
     const id = parseInt(document.getElementById('edit-loan-id').value);
     const newQty = parseInt(document.getElementById('edit-loan-qty').value);
@@ -545,15 +626,36 @@ async function confirmEditLoan() {
 
     const loanIndex = state.loans.findIndex(l => l.id === id);
     if(loanIndex > -1) {
+        // Tampilkan loading sebentar saja (feedback visual)
+        document.getElementById('loadingOverlay').classList.remove('hidden');
+        document.querySelector('#loadingOverlay p').innerText = "Menyimpan perubahan...";
+
+        // Update data lokal
         state.loans[loanIndex].jumlah = newQty;
         state.loans[loanIndex].tglKembali = newDue;
         
-        await saveToCloud();
-        refreshSiswaUI();
-        closeEditModal();
-        showToast("Perubahan disimpan!");
+        try {
+            // Kirim ke cloud tanpa menunggu (background sync)
+            saveToCloud();
+            
+            // Tutup modal & Refresh UI segera agar terasa instan
+            setTimeout(() => {
+                closeEditModal();
+                refreshSiswaUI();
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                
+                // Beri suara dan toast sukses
+                playDing();
+                showToast("Perubahan berhasil disimpan!");
+            }, 600); // 0.6 detik saja biar tidak dikira ngebug
+            
+        } catch(e) {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            showToast("Gagal sinkronisasi data", true);
+        }
     }
 }
+
 
 
     function renderMyHistory(list) {
@@ -651,61 +753,51 @@ async function confirmEditLoan() {
 
     // --- LOGIC FUNCTIONS ---
     async function processStudentLoan() {
-        const bId = document.getElementById('selected-book-id').value;
-        const qty = parseInt(document.getElementById('loan-qty').value);
-        const due = document.getElementById('loan-due').value;
+    const bId = document.getElementById('selected-book-id').value;
+    const qty = parseInt(document.getElementById('loan-qty').value);
+    const due = document.getElementById('loan-due').value;
 
-        if(!bId || !due) return showToast("Data belum lengkap!", true);
-        
-        const book = state.books.find(b => b.id == bId);
-        if(book.stok < qty) return showToast("Stok habis!", true);
+    if(!bId || !due) return showToast("Data belum lengkap!", true);
+    
+    const book = state.books.find(b => b.id == bId);
+    if(!book || book.stok < qty) return showToast("Stok tidak mencukupi!", true);
 
-        state.loans.push({
-            id: Date.now(),
-            namaAnggota: currentStudent.nama,
-            kelas: currentStudent.kelas,
-            judulBuku: book.judul,
-            jumlah: qty,
-            tglPinjam: new Date().toISOString(),
-            tglKembali: due,
-            status: 'Dipinjam'
-        });
+    document.getElementById('loadingOverlay').classList.remove('hidden');
+    document.querySelector('#loadingOverlay p').innerText = "Memproses Pinjaman...";
 
-        book.stok -= qty;
-        playDing();
-        await saveToCloud();
-        showToast("Berhasil meminjam!");
-        resetBookSelection();
-        nav('home');
-        refreshSiswaUI();
-    }
+    // Tambah ke local state
+    const newLoan = {
+        id: Date.now(),
+        namaAnggota: currentStudent.nama,
+        kelas: currentStudent.kelas,
+        judulBuku: book.judul,
+        jumlah: qty,
+        tglPinjam: new Date().toISOString(),
+        tglKembali: due,
+        status: 'Dipinjam'
+    };
+    state.loans.push(newLoan);
+    book.stok -= qty;
 
-    async function studentReturnBook(id) {
-        const loan = state.loans.find(l => l.id === id);
-        if(!loan) return;
-
-        openModal({
-            title: "Kembalikan Buku?",
-            desc: `Kembalikan buku "${loan.judulBuku}"?`,
-            onConfirm: async () => {
-                const book = state.books.find(b => b.judul === loan.judulBuku);
-                if(book) book.stok = parseInt(book.stok) + parseInt(loan.jumlah);
-
-                state.history.unshift({
-                    nama: loan.namaAnggota,
-                    buku: loan.judulBuku,
-                    tglPinjam: loan.tglPinjam,
-                    tglKembali: new Date().toISOString()
-                });
-
-                state.loans = state.loans.filter(l => l.id !== id);
-                playDing();
-                await saveToCloud();
-                refreshSiswaUI();
-                showToast("Buku dikembalikan!");
-            }
-        });
-    }
+    // Kirim ke Cloud
+    await saveToCloud(); 
+    
+    // Kita langsung panggil loadData untuk sinkronisasi ulang
+    // Tanpa menunggu konfirmasi 'Success' yang terhalang CORS
+    setTimeout(async () => {
+        try {
+            await loadDataFromCloud();
+            playDing();
+            showToast("Berhasil meminjam!");
+            resetBookSelection();
+            nav('home');
+        } catch(err) {
+            console.log("Refresh data tertunda...");
+        } finally {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+    }, 1500); // Beri jeda 1.5 detik agar Google Script selesai menulis di Sheet
+}
 
     // --- HELPERS (Tetap sama seperti kode Anda) ---
     function filterBooks(q) {
@@ -759,6 +851,68 @@ async function confirmEditLoan() {
     window.onload = () => {
         setTimeout(() => { document.getElementById('loadingOverlay').classList.add('hidden'); }, 1000);
     };
+    // --- FUNGSI NAVIGASI ---
+function nav(target) {
+    // Sembunyikan semua section
+    document.getElementById('sec-home').classList.add('hidden');
+    document.getElementById('sec-pinjam').classList.add('hidden');
+    document.getElementById('sec-katalog').classList.add('hidden');
+
+    // Tampilkan yang dipilih
+    document.getElementById('sec-' + target).classList.remove('hidden');
+
+    // Update style tombol navbar
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('nav-active');
+        btn.classList.add('text-slate-400');
+    });
+
+    // Aktifkan tombol yang diklik
+    event.currentTarget.classList.add('nav-active');
+    event.currentTarget.classList.remove('text-slate-400');
+}
+
+// --- FUNGSI KATALOG & FILTER ---
+function setCat(cat) {
+    currentCategory = cat;
+    document.querySelectorAll('.tab-btn-siswa').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white', 'active');
+        btn.classList.add('bg-white', 'text-slate-500');
+    });
+    event.currentTarget.classList.add('bg-blue-600', 'text-white', 'active');
+    renderKatalog(state.books);
+}
+
+function searchKatalog(q) {
+    const filtered = state.books.filter(b => 
+        b.judul.toLowerCase().includes(q.toLowerCase())
+    );
+    const container = document.getElementById('list-katalog');
+    // Logika render mirip renderKatalog tapi pakai list hasil filter
+    container.innerHTML = filtered.map(b => {
+        // ... (gunakan template literal yang sama dengan fungsi renderKatalog kamu)
+    }).join('');
+}
+
+// --- REFRESH UI ---
+function refreshSiswaUI() {
+    if (!currentStudent.nama) return;
+
+    // Filter pinjaman milik siswa yang sedang login (tambah toleransi case sensitive)
+    const myLoans = state.loans.filter(l => 
+        l.namaAnggota.toLowerCase().trim() === currentStudent.nama.toLowerCase().trim()
+    );
+    
+    const myHistory = state.history.filter(h => 
+        h.nama.toLowerCase().trim() === currentStudent.nama.toLowerCase().trim()
+    );
+    
+    document.getElementById('stat-my-loans').innerText = myLoans.length;
+    renderMyLoans(myLoans);
+    renderMyHistory(myHistory);
+    renderKatalog(state.books);
+}
+
 </script>
 
         <div id="editLoanModal" class="fixed inset-0 z-[9000] hidden flex items-center justify-center p-6">
