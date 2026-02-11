@@ -12,23 +12,32 @@
     body { 
     font-family: 'Plus Jakarta Sans', sans-serif; 
     /* Ganti URL di bawah dengan link gambar .jpg pilihanmu */
-    background-image: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)), 
-                      url('bg.jpg');
+    background-image:             url('https://i.ibb.co.com/F4zQTGmv/file-00000000a2c87209b236e08d69571651.png');
     background-attachment: fixed;
     background-size: cover;
     background-position: center;
     color: #1a1a1a;
     -webkit-tap-highlight-color: transparent;
 }
+#loginScreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5000;
+}
 
-
-        .login-bg {
-            background-image: linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.8)), 
-                              url('https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=80');
-            background-size: cover;
-            background-position: center;
-        }
-
+       .login-bg {
+    /* Silakan ganti URL di bawah ini dengan gambar khusus untuk login */
+    background-image: linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.8)), 
+                      url('https://i.ibb.co.com/JFsz4XHz/depositphotos-131494310-stock-photo-blurred-bookshelf-in-library.webp');
+    background-size: cover;
+    background-position: center;
+    position: fixed; /* Pastikan menutupi seluruh layar */
+    inset: 0;
+    z-index: 1000;
+}
         .glass-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
