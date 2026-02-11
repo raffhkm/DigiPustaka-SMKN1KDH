@@ -459,6 +459,13 @@
             history: [],
             visitors: []
         };
+// Cek apakah ada data cadangan di HP
+const localBackup = localStorage.getItem('digipustaka_db');
+if (localBackup) {
+    state = JSON.parse(localBackup);
+    // Langsung render data dari HP dulu supaya tidak kosong nunggu loading cloud
+    setTimeout(() => refreshUI(), 100); 
+}
 
         const DENDA_PER_HARI = 2000;
 
@@ -480,22 +487,30 @@
             } else showToast("Kode Salah!", true);
         }
 
-        async function loadDataFromCloud() {
-            document.getElementById('loadingOverlay').classList.remove('hidden');
-            try {
-                const response = await fetch(APPS_SCRIPT_URL);
-                const data = await response.json();
-                state = {
-            books: data.buku || [],
-            members: data.anggota || [],
-            loans: data.pinjaman || [],
-            history: data.riwayat || [],
-            visitors: data.tamu || [] // <--- Tambahkan baris ini
-        };
-                refreshUI();
-            } catch(e) { showToast("Gagal memuat data dari cloud.", true); }
-            finally { document.getElementById('loadingOverlay').classList.add('hidden'); }
-        }
+       async function loadDataFromCloud() {
+    document.getElementById('loadingOverlay').classList.remove('hidden');
+    try {
+        const response = await fetch(APPS_SCRIPT_URL);
+        const data = await response.json();
+        
+        // PASTIKAN SEMUA PROPERTY TERISI DENGAN DATA TERBARU DARI SERVER
+        state.books = data.buku || [];
+        state.members = data.anggota || [];
+        state.loans = data.pinjaman || [];
+        state.history = data.riwayat || [];
+        state.visitors = data.tamu || []; // Menimpa data lokal dengan data server
+        
+        // Simpan ke HP agar sinkron
+        localStorage.setItem('digipustaka_db', JSON.stringify(state));
+        
+        refreshUI();
+    } catch(e) { 
+        showToast("Gagal sinkron data terbaru.", true); 
+    } finally { 
+        document.getElementById('loadingOverlay').classList.add('hidden'); 
+    }
+}
+
 
         function nav(page) {
             document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
@@ -760,16 +775,32 @@ if(state.books.length > 0){
 }
 
         // --- ACTIONS ---
-        async function saveToCloud() {
-            // Kita gunakan indikator loading yang tidak mengganggu jika dipicu oleh update stok
-            try {
-                await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify(state)
-                });
-            } catch(e) { showToast("Gagal sinkron ke Cloud", true); }
-        }
+     async function saveToCloud() {
+    // Tampilkan indikator kecil kalau sedang menyimpan
+    const statusText = document.getElementById('pageTitle');
+    const originalTitle = statusText.innerText;
+    statusText.innerText = "⏳ Menyimpan...";
+
+    try {
+        const response = await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(state) // Hapus mode: 'no-cors'
+        });
+        
+        // Simpan juga ke memori HP sebagai cadangan (LocalStorage)
+        localStorage.setItem('digipustaka_db', JSON.stringify(state));
+        
+        statusText.innerText = originalTitle;
+    } catch(e) {
+        console.error("Gagal sinkron:", e);
+        statusText.innerText = "❌ Gagal Simpan!";
+        showToast("Koneksi internet bermasalah. Data disimpan di HP saja.", true);
+        
+        // Tetap simpan di lokal meski internet mati
+        localStorage.setItem('digipustaka_db', JSON.stringify(state));
+    }
+}
+
 
         function addMember() {
             const n = document.getElementById('add-member-name').value;
@@ -1336,45 +1367,65 @@ function renderVisitors() {
 }
 
 // Hapus SATU data tamu
-function deleteVisitor(id) {
+async function deleteVisitor(id) {
     const visitor = state.visitors.find(v => v.id === id);
     if (!visitor) return;
 
     openModal({
         title: "Hapus Data Tamu?",
-        desc: `Kunjungan ${visitor.nama} akan dihapus dari daftar hari ini.`,
+        desc: `Kunjungan ${visitor.nama} akan dihapus permanen.`,
         icon: "fa-user-xmark",
         iconColor: "bg-purple-100 text-purple-600",
         btnClass: "bg-purple-600 shadow-lg shadow-purple-200",
         btnText: "Ya, Hapus",
-        onConfirm: () => {
+        onConfirm: async () => { // Tambahkan async di sini
+            // 1. Hapus dari State Lokal
             state.visitors = state.visitors.filter(v => v.id !== id);
+            
+            // 2. Render UI Segera (biar terasa cepat)
             renderVisitors();
-            saveToCloud();
+            
+            // 3. Kirim ke Cloud dan TUNGGU (await)
+            await saveToCloud();
+            
+            // 4. Update LocalStorage sebagai cadangan
+            localStorage.setItem('digipustaka_db', JSON.stringify(state));
+            
             showToast("Data kunjungan dihapus", true);
         }
     });
 }
 
+
 // Hapus SEMUA data tamu
-function clearAllVisitors() {
+async function clearAllVisitors() {
     if (state.visitors.length === 0) return showToast("Daftar sudah kosong", true);
 
     openModal({
         title: "Kosongkan Daftar?",
-        desc: "Semua data kunjungan hari ini akan dihapus permanen.",
+        desc: "Semua data kunjungan hari ini akan dihapus permanen dari server.",
         icon: "fa-users-slash",
         iconColor: "bg-red-100 text-red-600",
         btnClass: "bg-red-600 shadow-lg shadow-red-200",
         btnText: "Hapus Semua",
-        onConfirm: () => {
+        onConfirm: async () => { // Tambahkan async
+            // 1. Kosongkan State
             state.visitors = [];
+            
+            // 2. Render UI
             renderVisitors();
-            saveToCloud();
+            
+            // 3. Kirim ke Cloud & Tunggu
+            await saveToCloud();
+            
+            // 4. Update LocalStorage
+            localStorage.setItem('digipustaka_db', JSON.stringify(state));
+            
             showToast("Daftar tamu telah dibersihkan");
         }
     });
 }
+
 
 // FUNGSI UNTUK TAMBAH/KURANG STOK
 function changeStock(id, delta) {
@@ -1668,4 +1719,3 @@ async function saveEditLoan() {
 
 </body>
 </html>
-
