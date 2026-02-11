@@ -208,26 +208,26 @@
                 </div>
 
                 <!-- RINGKASAN KATEGORI -->
-                <div>
-                    <h4 class="font-extrabold text-slate-800 mb-3 text-sm">Ringkasan Kategori</h4>
-                    <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-                        <div class="min-w-[130px] glass-card p-4 rounded-3xl bg-indigo-50 border-indigo-100 cat-badge">
-                            <div class="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center mb-3 shadow-lg shadow-indigo-200"><i class="fas fa-graduation-cap text-xs"></i></div>
-                            <p class="text-[9px] font-bold text-indigo-400 uppercase">Pelajaran</p>
-                            <p id="cat-pelajaran" class="text-xl font-black text-indigo-900">0</p>
-                        </div>
-                        <div class="min-w-[130px] glass-card p-4 rounded-3xl bg-rose-50 border-rose-100 cat-badge">
-                            <div class="w-8 h-8 bg-rose-600 text-white rounded-xl flex items-center justify-center mb-3 shadow-lg shadow-rose-200"><i class="fas fa-heart text-xs"></i></div>
-                            <p class="text-[9px] font-bold text-rose-400 uppercase">Novel</p>
-                            <p id="cat-novel" class="text-xl font-black text-rose-900">0</p>
-                        </div>
-                        <div class="min-w-[130px] glass-card p-4 rounded-3xl bg-emerald-50 border-emerald-100 cat-badge">
-                            <div class="w-8 h-8 bg-emerald-600 text-white rounded-xl flex items-center justify-center mb-3 shadow-lg shadow-emerald-200"><i class="fas fa-language text-xs"></i></div>
-                            <p class="text-[9px] font-bold text-emerald-400 uppercase">Kamus</p>
-                            <p id="cat-kamus" class="text-xl font-black text-emerald-900">0</p>
-                        </div>
-                    </div>
-                </div>
+              <div>
+    <h4 class="font-extrabold text-slate-800 mb-3 text-sm">Ringkasan Kategori</h4>
+    <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+        <div class="min-w-[130px] glass-card p-4 rounded-3xl bg-indigo-50 border-indigo-100 cat-badge">
+            <div class="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center mb-3 shadow-lg shadow-indigo-200"><i class="fas fa-graduation-cap text-xs"></i></div>
+            <p class="text-[9px] font-bold text-indigo-400 uppercase">Pelajaran</p>
+            <p id="cat-pelajaran" class="text-xl font-black text-indigo-900">0</p>
+        </div>
+        <div class="min-w-[130px] glass-card p-4 rounded-3xl bg-rose-50 border-rose-100 cat-badge">
+            <div class="w-8 h-8 bg-rose-600 text-white rounded-xl flex items-center justify-center mb-3 shadow-lg shadow-rose-200"><i class="fas fa-book text-xs"></i></div>
+            <p class="text-[9px] font-bold text-rose-400 uppercase">Fiksi</p>
+            <p id="cat-fiksi" class="text-xl font-black text-rose-900">0</p>
+        </div>
+        <div class="min-w-[130px] glass-card p-4 rounded-3xl bg-emerald-50 border-emerald-100 cat-badge">
+            <div class="w-8 h-8 bg-emerald-600 text-white rounded-xl flex items-center justify-center mb-3 shadow-lg shadow-emerald-200"><i class="fas fa-brain text-xs"></i></div>
+            <p class="text-[9px] font-bold text-emerald-400 uppercase">Pengetahuan</p>
+            <p id="cat-pengetahuan" class="text-xl font-black text-emerald-900">0</p>
+        </div>
+    </div>
+</div>
 
                 <!-- DASHBOARD SEARCH -->
                 <div class="relative pt-2">
@@ -355,11 +355,12 @@
                 <div id="form-buku" class="hidden glass-card p-6 rounded-[32px] border-t-4 border-t-emerald-500">
                     <div class="space-y-4">
                         <input type="text" id="book-title" placeholder="Judul Buku" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
-                        <select id="book-cat" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-slate-100">
-                            <option value="Pelajaran">Pelajaran</option>
-                            <option value="Novel">Novel</option>
-                            <option value="Kamus">Kamus</option>
-                        </select>
+                  <select id="book-cat" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-slate-100">
+    <option value="Pelajaran">Pelajaran</option>
+    <option value="Fiksi">Fiksi</option>
+    <option value="Pengetahuan">Pengetahuan</option>
+</select>
+
                         <input type="number" id="book-stock" placeholder="Stok Awal" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
                         <input type="text" id="book-img" placeholder="Link Gambar URL (Opsional)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
                         <button onclick="saveBook()" class="w-full btn-primary text-white py-4 rounded-2xl font-bold">Simpan </button>
@@ -374,8 +375,8 @@
                 </div>
 <div id="bookTabs" class="flex gap-4 mb-4 overflow-x-auto no-scrollbar">
     <button class="tab-btn bg-blue-600 text-white px-4 py-2 rounded-2xl font-bold" data-cat="Pelajaran">Pelajaran</button>
-    <button class="tab-btn bg-slate-200 text-slate-700 px-4 py-2 rounded-2xl font-bold" data-cat="Novel">Novel</button>
-    <button class="tab-btn bg-slate-200 text-slate-700 px-4 py-2 rounded-2xl font-bold" data-cat="Kamus">Kamus</button>
+    <button class="tab-btn bg-slate-200 text-slate-700 px-4 py-2 rounded-2xl font-bold" data-cat="Fiksi">Fiksi</button>
+    <button class="tab-btn bg-slate-200 text-slate-700 px-4 py-2 rounded-2xl font-bold" data-cat="Pengetahuan">Pengetahuan</button>
 </div>
 
 
@@ -501,32 +502,29 @@ const titles = {
             refreshUI();
         }
 
-      function refreshUI() {
-    // 1. Update Statistik di Dashboard
-    document.getElementById('stat-anggota').innerText = state.members.length;
-    document.getElementById('stat-buku').innerText = state.books.length;
+    function refreshUI() {
+    // 1. Update Statistik Dashboard
+    if (document.getElementById('stat-anggota')) document.getElementById('stat-anggota').innerText = state.members.length;
+    if (document.getElementById('stat-buku')) document.getElementById('stat-buku').innerText = state.books.length;
     
-    document.getElementById('cat-pelajaran').innerText = state.books.filter(b => b.kategori === 'Pelajaran').length;
-    document.getElementById('cat-novel').innerText = state.books.filter(b => b.kategori === 'Novel').length;
-    document.getElementById('cat-kamus').innerText = state.books.filter(b => b.kategori === 'Kamus').length;
+    // Hitung Kategori Baru
+   document.getElementById('cat-pelajaran').innerText = state.books.filter(b => b.kategori === 'Pelajaran').length;
+    document.getElementById('cat-fiksi').innerText = state.books.filter(b => b.kategori === 'Fiksi').length;
+    document.getElementById('cat-pengetahuan').innerText = state.books.filter(b => b.kategori === 'Pengetahuan').length;
 
-    // 2. Cek Tab Kategori yang sedang aktif di bagian Buku
-    // Kita cari tombol yang punya warna biru (tanda sedang aktif)
-    const activeTab = document.querySelector('.tab-btn.bg-blue-600');
+    // 2. Ambil kategori yang sedang aktif di Tab
+   const activeTab = document.querySelector('.tab-btn.bg-blue-600');
     const currentCat = activeTab ? activeTab.getAttribute('data-cat') : 'Pelajaran';
-
-    // 3. Render Semua Komponen UI
+    // 3. Panggil fungsi render (Pastikan fungsi-fungsi ini ada di bawah)
     const activeLoans = state.loans.filter(l => l.status === 'Dipinjam');
     document.getElementById('loan-count-badge').innerText = `${activeLoans.length} Data`;
-    
-    renderLoans(activeLoans);
-    renderMembers(state.members);
-    renderHistory(state.history);
-    renderVisitors(); 
-    updateLiveBanner();
-
-    // 4. Render Buku berdasarkan kategori yang sedang dipilih
-    renderBooks(state.books, currentCat);
+    // Memastikan fungsi pendukung dipanggil
+    if (typeof renderLoans === "function") renderLoans(activeLoans);
+    if (typeof renderMembers === "function") renderMembers(state.members);
+    if (typeof renderHistory === "function") renderHistory(state.history);
+    if (typeof renderVisitors === "function") renderVisitors(); 
+    if (typeof updateLiveBanner === "function") updateLiveBanner();
+    if (typeof renderBooks === "function") renderBooks(state.books, currentCat);
 }
 
 // Pastikan fungsi renderBooks kamu juga diupdate menjadi seperti ini:
@@ -685,81 +683,42 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 if(state.books.length > 0){
     renderBooksByCategory('Pelajaran');
 }
-       function renderLoans(list) {
+      function renderLoans(list) {
     const today = new Date();
     today.setHours(0,0,0,0);
 
-    document.getElementById('list-pinjam-active').innerHTML = list.map(l => {
+    const container = document.getElementById('list-pinjam-active');
+    if (!container) return;
 
+    container.innerHTML = list.map(l => {
         const due = new Date(l.tglKembali);
         due.setHours(0,0,0,0);
 
         const isLate = today > due;
-        const diffDays = isLate
-            ? Math.ceil((today - due) / (1000 * 60 * 60 * 24))
-            : 0;
+        const diffDays = isLate ? Math.ceil((today - due) / (1000 * 60 * 60 * 24)) : 0;
 
         const badge = isLate
-            ? `<span class="inline-block mt-2 px-2 py-1 bg-red-100 text-red-600 rounded-lg text-[9px] font-black uppercase">
-                   Terlambat ${diffDays} hari
-               </span>`
-            : `<span class="inline-block mt-2 px-2 py-1 bg-emerald-100 text-emerald-600 rounded-lg text-[9px] font-black uppercase">
-                   Aktif
-               </span>`;
+            ? `<span class="inline-block mt-2 px-2 py-1 bg-red-100 text-red-600 rounded-lg text-[9px] font-black uppercase">Terlambat ${diffDays} hari</span>`
+            : `<span class="inline-block mt-2 px-2 py-1 bg-emerald-100 text-emerald-600 rounded-lg text-[9px] font-black uppercase">Aktif</span>`;
 
         const borderColor = isLate ? "border-red-500" : "border-blue-600";
 
         return `
-        <div class="glass-card p-5 rounded-3xl flex justify-between items-center border-l-8 ${borderColor}">
-            
+        <div class="glass-card p-5 rounded-3xl flex justify-between items-center border-l-8 ${borderColor} mb-4">
             <div class="space-y-1">
-                <h5 class="font-extrabold text-sm leading-tight">
-                    ${l.namaAnggota}
-                    <span class="text-[10px] text-slate-400 font-bold block">
-                        • ${l.kelas}
-                    </span>
-                </h5>
-
-                <p class="text-xs text-blue-600 font-bold mt-2">
-                    <i class="fas fa-book-open mr-1 opacity-50"></i>
-                    ${l.judulBuku}
-                </p>
-
+                <h5 class="font-extrabold text-sm leading-tight">${l.namaAnggota} <span class="text-[10px] text-slate-400 font-bold block">• ${l.kelas}</span></h5>
+                <p class="text-xs text-blue-600 font-bold mt-2"><i class="fas fa-book-open mr-1 opacity-50"></i>${l.judulBuku}</p>
                 ${badge}
-
                 <div class="text-[9px] font-bold uppercase mt-2 space-y-0.5">
-                    <div class="text-slate-400">
-                        📅 Batas: ${formatTanggalID(l.tglKembali)}
-                    </div>
-                    <div class="text-blue-500">
-                        ⏱ Sekarang: ${getNowID()}
-                    </div>
+                    <div class="text-slate-400">📅 Batas: ${formatTanggalID(l.tglKembali)}</div>
+                    <div class="text-blue-500">⏱ Sekarang: ${getNowID()}</div>
                 </div>
             </div>
-
-            <button onclick="returnBook(${l.id})"
-                class="shrink-0 h-10 px-4 ${isLate ? 'bg-red-600 shadow-red-200' : 'bg-blue-600 shadow-blue-100'}
-                text-white rounded-xl text-[10px] font-black uppercase shadow-lg active:scale-95 transition-all">
-                Kembalikan
-            </button>
-
+            <button onclick="returnBook(${l.id})" class="shrink-0 h-10 px-4 ${isLate ? 'bg-red-600 shadow-red-200' : 'bg-blue-600 shadow-blue-100'} text-white rounded-xl text-[10px] font-black uppercase shadow-lg active:scale-95 transition-all">Kembalikan</button>
         </div>`;
-    }).join('')
-    || '<div class="text-center py-10 opacity-30 text-xs italic">Tidak ada peminjaman aktif</div>';
+    }).join('') || '<div class="text-center py-10 opacity-30 text-xs italic">Tidak ada peminjaman aktif</div>';
 }
-        function renderMembers(list) {
-            document.getElementById('list-members').innerHTML = list.map(m => `
-                <div class="glass-card p-4 rounded-2xl flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold">${m.nama.charAt(0)}</div>
-                        <div><p class="font-extrabold text-slate-800 text-sm">${m.nama}</p><p class="text-[10px] text-slate-400 font-bold uppercase">${m.kelas}</p></div>
-                    </div>
-                    <button onclick="deleteMember(${m.id})" class="text-red-300 hover:text-red-500 p-2"><i class="fas fa-trash-can"></i></button>
-                </div>
-            `).join('');
-        }
 
-       
 
         // --- ACTIONS ---
         async function saveToCloud() {
@@ -1240,11 +1199,31 @@ function changeStock(id, delta) {
         saveToCloud();
         
         // Update angka di dashboard tanpa pindah halaman
-        document.getElementById('stat-buku').innerText = state.books.length;
-        document.getElementById('cat-pelajaran').innerText = state.books.filter(b => b.kategori === 'Pelajaran').length;
-        document.getElementById('cat-novel').innerText = state.books.filter(b => b.kategori === 'Novel').length;
-        document.getElementById('cat-kamus').innerText = state.books.filter(b => b.kategori === 'Kamus').length;
+      document.getElementById('cat-pelajaran').innerText = state.books.filter(b => b.kategori === 'Pelajaran').length;
+document.getElementById('cat-fiksi').innerText = state.books.filter(b => b.kategori === 'Fiksi').length;
+document.getElementById('cat-pengetahuan').innerText = state.books.filter(b => b.kategori === 'Pengetahuan').length;
     }
+}
+function renderMembers(list) {
+    const container = document.getElementById('list-members');
+    if (!container) return;
+
+    container.innerHTML = list.map(m => `
+        <div class="glass-card p-5 rounded-3xl flex justify-between items-center border-l-4 border-blue-600 animate-in fade-in duration-300">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-black text-lg shadow-inner">
+                    ${m.nama.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                    <h5 class="font-extrabold text-slate-800 text-sm leading-tight">${m.nama}</h5>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">${m.kelas}</p>
+                </div>
+            </div>
+            <button onclick="deleteMember(${m.id})" class="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-red-500 transition-colors">
+                <i class="fas fa-trash-alt text-xs"></i>
+            </button>
+        </div>
+    `).join('') || '<div class="text-center py-10 opacity-30 text-xs italic">Belum ada anggota terdaftar</div>';
 }
 
 </script>
