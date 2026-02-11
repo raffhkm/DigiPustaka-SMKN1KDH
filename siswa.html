@@ -367,17 +367,18 @@
     document.querySelector('#loadingOverlay p').innerText = "Sinkronisasi Data...";
 
     try {
-        // AMBIL DATA TERBARU DULU (Agar data buku tidak hilang)
+        // 1. AMBIL DATA TERBARU (Sangat Penting: Ambil SEMUA sheet)
         const response = await fetch(APPS_SCRIPT_URL);
         const cloudData = await response.json();
         
-        // Update state lokal dengan data dari cloud
+        // 2. Update state lokal (PASTIKAN 'anggota/members' ikut diambil agar tidak hilang)
         state.books = cloudData.buku || [];
+        state.members = cloudData.anggota || []; // <--- BARIS INI YANG TADI HILANG
         state.loans = cloudData.pinjaman || [];
         state.history = cloudData.riwayat || [];
         state.visitors = cloudData.tamu || [];
 
-        // Baru tambahkan kunjungan baru
+        // 3. Tambahkan kunjungan baru ke array visitors
         currentStudent = { nama: name, kelas: cls };
         const newVisitor = {
             id: Date.now(),
@@ -388,10 +389,10 @@
         };
         state.visitors.push(newVisitor);
 
-        // Kirim balik ke cloud (Data buku sudah ikut terkirim kembali, jadi tidak hilang)
+        // 4. Kirim balik ke cloud (Sekarang state.members sudah ada isinya, jadi aman)
         await saveToCloud();
         
-        // Pindah ke App Utama
+        // Setup UI
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('mainApp').classList.remove('hidden');
         document.getElementById('welcomeName').innerText = `Halo, ${name.split(' ')[0]}!`;
@@ -406,6 +407,7 @@
         document.getElementById('loadingOverlay').classList.add('hidden');
     }
 }
+
 // --- FUNGSI PENGEMBALIAN BUKU ---
 async function studentReturnBook(id) {
     // Cari data pinjaman berdasarkan ID
