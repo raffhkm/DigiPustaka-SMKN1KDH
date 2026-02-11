@@ -260,6 +260,15 @@
             <button onclick="addVisitor()" class="w-full bg-purple-600 text-white py-4 rounded-2xl font-black shadow-lg shadow-purple-200 active:scale-[0.98] transition-all">Simpan Kunjungan</button>
         </div>
     </div>
+<div class="flex justify-between items-center">
+    <h4 class="font-extrabold text-slate-800">Daftar Hadir</h4>
+    <div class="flex gap-2">
+        <button onclick="clearAllVisitors()" class="bg-red-50 text-red-500 text-[9px] px-3 py-1.5 rounded-lg font-black uppercase">
+            <i class="fas fa-trash-sweep"></i> Bersihkan
+        </button>
+        <span id="visitor-count-badge" class="bg-purple-100 text-purple-600 text-[10px] px-2 py-1 rounded-lg font-black uppercase">0 Orang</span>
+    </div>
+</div>
 
     <div class="flex justify-between items-center">
         <h4 class="font-extrabold text-slate-800">Daftar Hadir</h4>
@@ -561,6 +570,26 @@ function renderBooks(list, category = 'Pelajaran') {
         </div>
     `).join('') || '<div class="text-center py-10 opacity-30 text-xs italic">Belum ada buku di kategori ini</div>';
 }
+function deleteBook(id) {
+    // Cari data buku berdasarkan ID untuk ambil Judul dan Foto
+    const book = state.books.find(b => b.id === id);
+    if (!book) return;
+
+    openModal({
+        title: "Hapus Buku?",
+        desc: `Buku "${book.judul}" akan dihapus permanen dari katalog.`,
+        imgUrl: book.fotoUrl || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300', // Foto buku
+        btnClass: "bg-red-600 shadow-lg shadow-red-200",
+        btnText: "Hapus Sekarang",
+        onConfirm: () => {
+            state.books = state.books.filter(b => b.id !== id);
+            refreshUI();
+            saveToCloud();
+            showToast("Buku telah dihapus", true);
+        }
+    });
+}
+
 
         // --- RENDERING ---
         // Fungsi Render Utama yang mendukung filter kategori
@@ -918,20 +947,48 @@ function renderHistory(list) {
         function searchMembers(q) { const f = state.members.filter(m => m.nama.toLowerCase().includes(q.toLowerCase()) || m.kelas.toLowerCase().includes(q.toLowerCase())); renderMembers(f); }
         function searchBooks(q) { const f = state.books.filter(b => b.judul.toLowerCase().includes(q.toLowerCase()) || b.kategori.toLowerCase().includes(q.toLowerCase())); renderBooks(f); }
         function searchHistory(q) { const f = state.history.filter(h => h.nama.toLowerCase().includes(q.toLowerCase()) || h.buku.toLowerCase().includes(q.toLowerCase())); renderHistory(f); }
-        function deleteMember(id) { if(confirm("Hapus anggota?")) { state.members = state.members.filter(m => m.id !== id); refreshUI(); saveToCloud(); } }
-        function deleteBook(id) { if(confirm("Hapus buku?")) { state.books = state.books.filter(b => b.id !== id); refreshUI(); saveToCloud(); } }
-        function toggleElement(id) { document.getElementById(id).classList.toggle('hidden'); }
+      function deleteMember(id) {
+    openModal({
+        title: "Hapus Anggota",
+        desc: "Data anggota ini akan dihapus permanen dari sistem.",
+        icon: "fa-user-minus",
+        iconColor: "bg-red-100 text-red-600",
+        btnClass: "bg-red-600 shadow-lg shadow-red-200",
+        onConfirm: () => {
+            state.members = state.members.filter(m => m.id !== id);
+            refreshUI();
+            saveToCloud();
+            showToast("Anggota berhasil dihapus", true);
+        }
+    });
+}
+
         function refreshOnlyUI() { showToast("Sinkronisasi data..."); loadDataFromCloud(); }
-        function logoutApp() { if(confirm("Keluar dari admin?")) { document.getElementById('mainApp').classList.add('hidden'); document.getElementById('loginScreen').classList.remove('hidden'); document.getElementById('adminPass').value = ""; } }
+     function logoutApp() {
+    openModal({
+        title: "Keluar Sesi",
+        desc: "Kamu harus memasukkan kode akses lagi untuk masuk kembali.",
+        icon: "fa-right-from-bracket",
+        iconColor: "bg-orange-100 text-orange-600",
+        btnClass: "bg-orange-600 shadow-lg shadow-orange-200",
+        onConfirm: () => {
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('adminPass').value = "";
+            showToast("Berhasil keluar");
+        }
+    });
+}
+
     function updateLiveBanner() {
     const totalBuku = state.books.length;
     const totalAnggota = state.members.length;
     const aktif = state.loans.filter(l => l.status === 'Dipinjam').length;
 
     const text = `
-    📚 TOTAL BUKU: ${totalBuku} • 
-    👥 ANGGOTA: ${totalAnggota} • 
-    🔄 DIPINJAM: ${aktif} • 
+     TOTAL BUKU: ${totalBuku} • 
+     ANGGOTA: ${totalAnggota} • 
+     DIPINJAM: ${aktif} • 
     ✨ AYO BACA BUKU — BUKA DUNIA DENGAN ILMU •
     `;
 
@@ -988,13 +1045,24 @@ function hitungDenda(tglKembali, tglReal) {
   return telat > 0 ? telat * 2000 : 0;
 }
 function clearAllHistory() {
-    if(confirm("Apakah kamu yakin ingin menghapus semua riwayat? Tindakan ini tidak bisa dibatalkan!")) {
-        state.history = [];
-        refreshUI();   // update tampilan
-        saveToCloud(); // sinkron ke cloud
-        showToast("Semua riwayat telah dihapus");
-    }
+    if (state.history.length === 0) return showToast("Riwayat sudah kosong", true);
+
+    openModal({
+        title: "Hapus Riwayat?",
+        desc: "Seluruh laporan peminjaman akan dihapus secara permanen.",
+        icon: "fa-clock-rotate-left",
+        iconColor: "bg-red-100 text-red-600",
+        btnClass: "bg-red-600 shadow-lg shadow-red-200",
+        btnText: "Bersihkan Riwayat",
+        onConfirm: () => {
+            state.history = [];
+            renderHistory(state.history);
+            saveToCloud();
+            showToast("Riwayat telah dibersihkan");
+        }
+    });
 }
+
 // --- LOGIK FILTER ANGGOTA ---
 function filterLoanMembers() {
     const q = document.getElementById('search-loan-member').value.toLowerCase();
@@ -1154,22 +1222,47 @@ function renderVisitors() {
     `).join('') || '<div class="text-center py-10 opacity-30 text-xs italic">Belum ada data kunjungan</div>';
 }
 
+// Hapus SATU data tamu
 function deleteVisitor(id) {
-    if(confirm("Hapus data kunjungan ini?")) {
-        state.visitors = state.visitors.filter(v => v.id !== id);
-        renderVisitors();
-        saveToCloud();
-        showToast("Data kunjungan dihapus", true);
-    }
+    const visitor = state.visitors.find(v => v.id === id);
+    if (!visitor) return;
+
+    openModal({
+        title: "Hapus Data Tamu?",
+        desc: `Kunjungan ${visitor.nama} akan dihapus dari daftar hari ini.`,
+        icon: "fa-user-xmark",
+        iconColor: "bg-purple-100 text-purple-600",
+        btnClass: "bg-purple-600 shadow-lg shadow-purple-200",
+        btnText: "Ya, Hapus",
+        onConfirm: () => {
+            state.visitors = state.visitors.filter(v => v.id !== id);
+            renderVisitors();
+            saveToCloud();
+            showToast("Data kunjungan dihapus", true);
+        }
+    });
 }
-function deleteVisitor(id) {
-    if(confirm("Hapus data kunjungan ini?")) {
-        state.visitors = state.visitors.filter(v => v.id !== id);
-        renderVisitors();
-        saveToCloud();
-        showToast("Data kunjungan dihapus", true);
-    }
+
+// Hapus SEMUA data tamu
+function clearAllVisitors() {
+    if (state.visitors.length === 0) return showToast("Daftar sudah kosong", true);
+
+    openModal({
+        title: "Kosongkan Daftar?",
+        desc: "Semua data kunjungan hari ini akan dihapus permanen.",
+        icon: "fa-users-slash",
+        iconColor: "bg-red-100 text-red-600",
+        btnClass: "bg-red-600 shadow-lg shadow-red-200",
+        btnText: "Hapus Semua",
+        onConfirm: () => {
+            state.visitors = [];
+            renderVisitors();
+            saveToCloud();
+            showToast("Daftar tamu telah dibersihkan");
+        }
+    });
 }
+
 // FUNGSI UNTUK TAMBAH/KURANG STOK
 function changeStock(id, delta) {
     // 1. Cari bukunya di state
@@ -1255,7 +1348,61 @@ function renderMembers(list) {
         gainNode.connect(audioCtx.destination);
         source.start(0);
     }
+   function openModal({ title, desc, icon, iconColor, btnClass, btnText, imgUrl, onConfirm }) {
+    const modal = document.getElementById('customModal');
+    const iconEl = document.getElementById('modalIcon');
+    const imgCont = document.getElementById('modalImgContainer');
+    const imgEl = document.getElementById('modalImg');
+    const confirmBtn = document.getElementById('modalConfirmBtn');
+
+    document.getElementById('modalTitle').innerText = title;
+    document.getElementById('modalDesc').innerText = desc;
+    confirmBtn.innerText = btnText || "Ya, Lanjutkan";
+    
+    // Logika Gambar vs Icon
+    if (imgUrl) {
+        imgCont.classList.remove('hidden');
+        imgEl.src = imgUrl;
+        iconEl.classList.add('hidden');
+    } else {
+        imgCont.classList.add('hidden');
+        iconEl.classList.remove('hidden');
+        iconEl.className = `w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${iconColor}`;
+        iconEl.innerHTML = `<i class="fas ${icon} text-2xl"></i>`;
+    }
+
+    confirmBtn.className = `w-full py-4 rounded-2xl text-white font-black text-sm active:scale-95 transition-all ${btnClass}`;
+    modal.classList.remove('hidden');
+
+    confirmBtn.onclick = () => {
+        onConfirm();
+        closeModal();
+    };
+}
+
+function closeModal() {
+    document.getElementById('customModal').classList.add('hidden');
+}
+
 </script>
+<div id="customModal" class="fixed inset-0 z-[5000] hidden flex items-center justify-center p-6">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+    <div class="relative bg-white w-full max-w-xs rounded-[32px] p-8 shadow-2xl animate-in zoom-in duration-300">
+        <div id="modalIcon" class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"></div>
+        
+        <div id="modalImgContainer" class="hidden w-24 h-32 mx-auto mb-4 rounded-xl overflow-hidden shadow-lg border-2 border-slate-100">
+            <img id="modalImg" src="" class="w-full h-full object-cover">
+        </div>
+
+        <h3 id="modalTitle" class="text-center font-extrabold text-slate-800 text-lg leading-tight mb-2"></h3>
+        <p id="modalDesc" class="text-center text-slate-500 text-[11px] font-medium mb-8"></p>
+        
+        <div class="flex flex-col gap-3">
+            <button id="modalConfirmBtn" class="w-full py-4 rounded-2xl text-white font-black text-sm active:scale-95 transition-all"></button>
+            <button onclick="closeModal()" class="w-full py-4 rounded-2xl bg-slate-100 text-slate-500 font-bold text-sm active:scale-95 transition-all">Batalkan</button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
