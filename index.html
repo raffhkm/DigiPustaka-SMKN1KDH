@@ -808,7 +808,7 @@ if(state.books.length > 0){
     
     // Kurangi stok buku secara otomatis
     b.stok -= qty;
-
+playSuccessSound(); 
     // 5. Finalisasi: Reset Form, Simpan, dan Kembali ke Dashboard
     resetLoanForm();
     saveToCloud(); 
@@ -862,7 +862,7 @@ function resetLoanForm() {
     if(b) b.stok = parseInt(b.stok) + (parseInt(loan.jumlah) || 1);
 
     state.loans = state.loans.filter(l => l.id !== id);
-
+playSuccessSound();
     refreshUI();
     saveToCloud();
     showToast("Buku telah dikembalikan");
@@ -1227,5 +1227,35 @@ function renderMembers(list) {
 }
 
 </script>
+<script>
+    // Memakai Web Audio API agar suara instan & responsif
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let successBuffer = null;
+
+    // Load file suara sukses (suara ceklis/ding)
+    fetch('https://image2url.com/r2/default/audio/1770772810191-40079260-dc5c-4598-b982-4b62fe9cba92.mp3')
+        .then(res => res.arrayBuffer())
+        .then(data => audioCtx.decodeAudioData(data))
+        .then(buffer => {
+            successBuffer = buffer;
+        });
+
+    function playSuccessSound() {
+        if (!successBuffer) return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const source = audioCtx.createBufferSource();
+        source.buffer = successBuffer;
+        
+        // Pengaturan volume
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.value = 0.4; // Volume 40%
+        
+        source.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        source.start(0);
+    }
+</script>
+
 </body>
 </html>
