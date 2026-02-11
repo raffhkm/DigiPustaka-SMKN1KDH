@@ -450,7 +450,7 @@
     </div>
 
     <script>
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3FmPrVVVGbFWHK7Yp8iMQh-BS5U9iuA2fsTXWQLE9kijWtDx_ns3ti5_ickFUGZA7/exec"; 
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyTREkp9A-iSt0GthEzEOUBHcLWwnWQyJ-r0ihsEFKsRqubNdNgupNRafx-U95cfox/exec"; 
 
         let state = {
             books: [],
@@ -981,15 +981,16 @@ function renderHistory(list) {
 
     container.innerHTML = list.map((h, index) => {
         const denda = parseInt(h.denda) || 0;
-        const tglPinjam = h.tglPinjam || h.tgl || h.tanggalPinjam || null;
-        const tglKembali = h.tglKembali || h.tglKembaliReal || h.tanggalKembali || null;
+        
+        // Pastikan mengambil properti yang benar sesuai kolom di Google Sheets
+        const tglP = h.tglPinjam || h.tanggalPinjam;
+        const tglK = h.tglKembali || h.tanggalKembali;
 
         return `
         <div class="glass-card p-5 rounded-[24px] flex justify-between items-start border-l-8 ${denda > 0 ? 'border-red-500' : 'border-emerald-500'} mb-4 relative overflow-hidden group">
             <div class="space-y-1 pr-8">
                 <div class="flex flex-col">
                     <h5 class="font-extrabold text-slate-800 text-sm leading-tight">${h.nama || '-'}</h5>
-                  
                 </div>
                 
                 <p class="text-[11px] text-slate-500 font-bold mt-2"><i class="fas fa-book mr-1 opacity-50"></i>${h.buku || '-'}</p>
@@ -997,11 +998,11 @@ function renderHistory(list) {
                 <div class="text-[9px] mt-3 font-bold space-y-1 bg-slate-50 p-2 rounded-xl border border-slate-100">
                     <div class="flex justify-between gap-4">
                         <span class="text-slate-400">DIPINJAM:</span>
-                        <span class="text-slate-700">${formatTanggalJamID(tglPinjam)}</span>
+                        <span class="text-slate-700">${formatTanggalJamID(tglP)}</span>
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-slate-400">DIKEMBALIKAN:</span>
-                        <span class="text-emerald-600">${formatTanggalJamID(tglKembali)}</span>
+                        <span class="text-emerald-600">${formatTanggalJamID(tglK)}</span>
                     </div>
                 </div>
             </div>
@@ -1096,27 +1097,52 @@ function getNowID() {
     second: '2-digit'
   });
 }
+
+
 function formatTanggalID(tgl) {
-  const d = new Date(tgl);
-  return d.toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric'
-  });
+    if (!tgl || tgl === "") return "-";
+    try {
+        const d = new Date(tgl);
+        if (isNaN(d.getTime())) return "-";
+        return d.toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric'
+        });
+    } catch (e) {
+        return "-";
+    }
 }
+
 setInterval(() => {
   renderLoans(state.loans.filter(l => l.status === 'Dipinjam'));
 }, 1000);
 function formatTanggalJamID(tgl) {
-  if (!tgl) return "-";
-  return new Date(tgl).toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+    if (!tgl || tgl === "") return "-";
+    
+    // Coba buat objek date
+    let d = new Date(tgl);
+    
+    // Jika Invalid (biasanya karena format tgl/bln/thn dari Sheet)
+    if (isNaN(d.getTime())) {
+        // Cek jika formatnya string seperti "11/02/2026 19:00:00"
+        // Kita coba ganti karakter yang sering bikin error
+        let cleanedTgl = tgl.toString().replace(/-/g, '/'); 
+        d = new Date(cleanedTgl);
+    }
+
+    // Jika masih Invalid, tampilkan teks aslinya saja daripada "Invalid Date"
+    if (isNaN(d.getTime())) return tgl; 
+
+    return d.toLocaleString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    }).replace(/\./g, ':'); // Mengubah titik jadi titik dua pada jam
 }
+
 function hitungDenda(tglKembali, tglReal) {
   if (!tglKembali || !tglReal) return 0;
 
@@ -1275,34 +1301,36 @@ function renderVisitors() {
     const container = document.getElementById('list-visitors');
     const badge = document.getElementById('visitor-count-badge');
     
-    // Urutkan dari yang terbaru
-    const sortedVisitors = state.visitors.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
+    if (!state.visitors) state.visitors = [];
+    
+    // Gunakan try-catch di dalam sort agar jika ada tanggal rusak tidak merusak seluruh aplikasi
+    const sortedVisitors = [...state.visitors].sort((a, b) => {
+        const dateA = new Date(a.waktu);
+        const dateB = new Date(b.waktu);
+        return dateB - dateA;
+    });
     
     badge.innerText = `${sortedVisitors.length} Total Kunjungan`;
 
     container.innerHTML = sortedVisitors.map(v => `
-        <div class="glass-card p-4 rounded-2xl flex justify-between items-center border-l-4 border-purple-500 hover:shadow-md transition-all group">
+        <div class="glass-card p-4 rounded-2xl flex justify-between items-center border-l-4 border-purple-500 mb-3">
             <div class="flex items-center gap-4">
-                <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center">
                     <i class="fas fa-user-clock text-xs"></i>
                 </div>
                 <div>
                     <p class="font-extrabold text-slate-800 text-sm leading-tight">${v.nama}</p>
-                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
-                        <span class="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-bold uppercase">${v.kelas}</span>
-                        <span class="text-[9px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded font-bold uppercase">${v.tujuan}</span>
+                    <div class="flex gap-2 mt-1">
+                        <span class="text-[9px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded font-bold">${v.tujuan}</span>
                     </div>
                     <p class="text-[9px] text-slate-400 font-medium mt-1">
-                        <i class="far fa-calendar-alt mr-1"></i> ${formatTanggalJamID(v.waktu)}
+                        ${formatTanggalJamID(v.waktu)}
                     </p>
                 </div>
             </div>
-            
-            <div class="flex flex-col items-end gap-2">
-                <button onclick="deleteVisitor(${v.id})" class="w-8 h-8 flex items-center justify-center text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                    <i class="fas fa-trash-alt text-xs"></i>
-                </button>
-            </div>
+            <button onclick="deleteVisitor(${v.id})" class="text-red-200 hover:text-red-500 p-2">
+                <i class="fas fa-trash-alt text-xs"></i>
+            </button>
         </div>
     `).join('') || '<div class="text-center py-10 opacity-30 text-xs italic">Belum ada data kunjungan</div>';
 }
