@@ -319,7 +319,7 @@
 
   <script>
     // --- KONFIGURASI API ---
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3FmPrVVVGbFWHK7Yp8iMQh-BS5U9iuA2fsTXWQLE9kijWtDx_ns3ti5_ickFUGZA7/exec"; 
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyTREkp9A-iSt0GthEzEOUBHcLWwnWQyJ-r0ihsEFKsRqubNdNgupNRafx-U95cfox/exec"; 
 
     let state = {
         books: [],
@@ -356,22 +356,54 @@
     }
 
     // --- AUTH & LOGIN ---
-    function handleLoginSiswa() {
-        const name = document.getElementById('stu-name').value.trim();
-        const cls = document.getElementById('stu-class').value.trim();
-        const purpose = document.getElementById('stu-purpose').value;
+   async function handleLoginSiswa() {
+    const name = document.getElementById('stu-name').value.trim();
+    const cls = document.getElementById('stu-class').value.trim();
+    const purpose = document.getElementById('stu-purpose').value;
 
-        if (!name || !cls) return showToast("Mohon isi Nama & Kelas!", true);
+    if (!name || !cls) return showToast("Mohon isi Nama & Kelas!", true);
 
-        currentStudent = { nama: name, kelas: cls };
+    // 1. Simpan ke variabel lokal agar UI berubah
+    currentStudent = { nama: name, kelas: cls };
+    
+    // 2. Buat objek kunjungan (sesuaikan key dengan Apps Script: id, nama, kelas, tujuan, waktu)
+    const newVisitor = {
+        id: Date.now(),
+        nama: name,
+        kelas: cls,
+        tujuan: purpose, // Pastikan kuncinya 'tujuan' bukan 'purpose'
+        waktu: new Date().toLocaleString('id-ID')
+    };
+
+    // 3. Masukkan ke state
+    if (!state.visitors) state.visitors = [];
+    state.visitors.push(newVisitor);
+
+    // Tampilkan loading
+    document.getElementById('loadingOverlay').classList.remove('hidden');
+    document.querySelector('#loadingOverlay p').innerText = "Mencatat Kehadiran...";
+
+    try {
+        // 4. Kirim ke Cloud
+        await saveToCloud();
         
+        // Pindah ke App Utama
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('mainApp').classList.remove('hidden');
         document.getElementById('welcomeName').innerText = `Halo, ${name.split(' ')[0]}!`;
         document.getElementById('welcomeClass').innerText = cls;
 
-        loadDataFromCloud();
+        // 5. Muat ulang data untuk sinkronisasi terakhir
+        await loadDataFromCloud();
+        
+        showToast("Kehadiran berhasil dicatat!");
+    } catch(e) {
+        console.error(e);
+        showToast("Gagal sinkronisasi ke cloud", true);
+    } finally {
+        document.getElementById('loadingOverlay').classList.add('hidden');
     }
+}
 
     function logoutSiswa() {
     openModal({
@@ -411,51 +443,21 @@
     }
 
     async function saveToCloud() {
-        if (state.books.length === 0) return;
-        try {
-            await fetch(APPS_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify(state)
-            });
-        } catch(e) { console.error("Sync Error", e); }
+    // Hapus pengecekan state.books agar data tetap terkirim meski buku kosong
+    try {
+        await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', // Tetap gunakan no-cors untuk Apps Script
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(state)
+        });
+        console.log("Data synced to cloud");
+    } catch(e) { 
+        console.error("Sync Error", e); 
     }
-
-    // --- UI REFRESHER ---
-    function refreshSiswaUI() {
-        // Filter Pinjaman Aktif (Status: Dipinjam & Nama sama)
-        const myLoans = state.loans.filter(l => 
-            l.namaAnggota.toLowerCase() === currentStudent.nama.toLowerCase() && 
-            l.status === 'Dipinjam'
-        );
-
-        // Filter Riwayat (Nama sama)
-        const myHistory = state.history.filter(h => 
-            h.nama.toLowerCase() === currentStudent.nama.toLowerCase()
-        );
-
-        document.getElementById('stat-my-loans').innerText = myLoans.length;
-        renderMyLoans(myLoans);
-        renderMyHistory(myHistory);
-        renderKatalog(state.books);
-    }
-
-    function nav(page) {
-        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
-        document.getElementById(`sec-${page}`).classList.remove('hidden');
-        
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('nav-active', 'text-slate-400'));
-        const clickedBtn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.getAttribute('onclick').includes(page));
-        if(clickedBtn) clickedBtn.classList.add('nav-active');
-
-        if(page === 'home') loadDataFromCloud();
-        
-        if(page === 'pinjam') {
-            const today = new Date();
-            today.setDate(today.getDate() + 7);
-            document.getElementById('loan-due').value = today.toISOString().split('T')[0];
-        }
-    }
+}
 
     // --- RENDERERS ---
    function renderMyLoans(list) {
