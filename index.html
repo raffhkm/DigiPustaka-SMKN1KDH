@@ -1415,6 +1415,16 @@ function deleteHistoryItem(index) {
         }
     });
 }
+function toggleElement(id) {
+    const el = document.getElementById(id);
+    if (el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+        // Efek animasi halus saat muncul
+        el.classList.add('animate-in', 'fade-in', 'slide-in-from-top-2');
+    } else {
+        el.classList.add('hidden');
+    }
+}
 
 </script>
 <div id="customModal" class="fixed inset-0 z-[5000] hidden flex items-center justify-center p-6">
