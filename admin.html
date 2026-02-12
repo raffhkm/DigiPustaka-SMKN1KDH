@@ -467,7 +467,7 @@
     </div>
 
     <script>
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyTREkp9A-iSt0GthEzEOUBHcLWwnWQyJ-r0ihsEFKsRqubNdNgupNRafx-U95cfox/exec"; 
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzEMFvmrYe5TNpaKjT_iT9m0CV7grgfanaKHYfjjvOD82GS4-cgMM_4RhkR9YvXSTrx/exec"; 
 
         let state = {
             books: [],
@@ -581,6 +581,8 @@ const titles = {
 // Pastikan fungsi renderBooks kamu juga diupdate menjadi seperti ini:
 function renderBooks(list, category = 'Pelajaran') {
     const container = document.getElementById('list-books');
+    if (!container) return; // Keamanan tambahan agar tidak error jika element tidak ada
+
     const filtered = list.filter(b => b.kategori === category);
 
     container.innerHTML = filtered.map(b => `
@@ -657,43 +659,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // Render buku sesuai kategori terpilih
-function renderBooksByCategory(cat) {
-    const booksInCat = state.books.filter(b => b.kategori === cat);
-    const container = document.getElementById('list-books');
 
-    container.innerHTML = booksInCat.map(b => `
-        <div class="glass-card overflow-hidden rounded-[32px] flex mb-4">
-            <div class="w-28 h-40 bg-slate-100 flex-shrink-0 relative overflow-hidden">
-                <img src="${b.fotoUrl || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300'}" 
-                     class="w-full h-full object-cover" 
-                     onerror="this.src='https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=300'">
-                <div class="absolute top-2 left-2 px-2 py-0.5 bg-white/90 rounded-full text-[8px] font-black text-blue-600 uppercase shadow-sm">${b.kategori}</div>
-            </div>
-            <div class="p-4 flex-1 flex flex-col justify-between">
-                <div>
-                    <h4 class="font-extrabold text-slate-800 text-sm mt-1 leading-tight line-clamp-2">${b.judul}</h4>
-                    <div class="flex items-center justify-between mt-3 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                        <button onclick="changeStock(${b.id}, -1)" class="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-red-500 active:scale-90 transition-all">
-                            <i class="fas fa-minus text-[10px]"></i>
-                        </button>
-                        <div class="text-center px-2">
-                            <p class="text-[8px] text-slate-400 font-bold uppercase leading-none mb-1">Stok</p>
-                            <span id="stock-val-${b.id}" class="text-sm font-black text-slate-800">${b.stok}</span>
-                        </div>
-                        <button onclick="changeStock(${b.id}, 1)" class="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-emerald-500 active:scale-90 transition-all">
-                            <i class="fas fa-plus text-[10px]"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="flex gap-2 mt-3">
-                    <button onclick="deleteBook(${b.id})" class="text-red-300 hover:text-red-500 text-[10px] font-bold uppercase transition-all px-2 py-1">
-                        <i class="fas fa-trash-can mr-1"></i> Hapus
-                    </button>
-                </div>
-            </div>
-        </div>
-    `).join('') || `<div class="text-center py-10 opacity-30 text-xs italic">Belum ada buku di kategori ini</div>`;
-}
 
 // Event listener untuk tab
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -708,15 +674,18 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('bg-slate-200','text-slate-700');
 
         // Render buku sesuai kategori
-        const cat = btn.getAttribute('data-cat');
-        renderBooksByCategory(cat);
+      // Render buku sesuai kategori
+const cat = btn.getAttribute('data-cat');
+renderBooks(state.books, cat); // <--- SAMAKAN DENGAN NAMA FUNGSI DI BAWAHNYA
+
     });
 });
 
 // Render default kategori pertama saat load
 if(state.books.length > 0){
-    renderBooksByCategory('Pelajaran');
+    renderBooks(state.books, 'Pelajaran');
 }
+
     function renderLoans(list) {
     const today = new Date();
     today.setHours(0,0,0,0);
