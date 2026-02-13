@@ -997,42 +997,53 @@ function resetLoanForm() {
     const loan = state.loans.find(l => l.id === id);
     if (!loan) return;
 
-    const due = new Date(loan.tglKembali);
-    const now = new Date();
+    // --- FIX ZONA WAKTU UNTUK WAKTU SEKARANG (WIB) ---
+    const sekarang = new Date();
+    const offset = sekarang.getTimezoneOffset() * 60000;
+    const waktuSekarangLokal = new Date(sekarang - offset).toISOString();
 
-    // Pastikan tglPinjam mengambil dari data pinjaman, bukan jam sekarang
+    const due = new Date(loan.tglKembali);
+    const now = new Date(sekarang - offset); // Gunakan objek lokal untuk hitung denda
+
+    // Pastikan tglPinjam mengambil dari data pinjaman
     const tanggalAsliPinjam = loan.tglPinjam; 
 
     let denda = 0;
     const dueDateOnly = new Date(due);
     const nowDateOnly = new Date(now);
+    
     dueDateOnly.setHours(0,0,0,0);
     nowDateOnly.setHours(0,0,0,0);
 
+    // Hitung denda jika hari ini melewati batas kembali
     if(nowDateOnly > dueDateOnly) {
         const diffDays = Math.ceil((nowDateOnly - dueDateOnly) / 86400000);
         denda = diffDays * DENDA_PER_HARI;
     }
 
-    // Masukkan ke riwayat dengan tglPinjam yang benar
+    // Masukkan ke riwayat dengan waktu lokal yang benar
     state.history.unshift({
         nama: loan.namaAnggota,
         buku: loan.judulBuku,
         kelas: loan.kelas,
-        tglPinjam: tanggalAsliPinjam, // Menggunakan data asli saat pencatatan pinjam
-        tglKembali: now.toISOString(), // Waktu pengembalian adalah SEKARANG
+        tglPinjam: tanggalAsliPinjam, 
+        tglKembali: waktuSekarangLokal, // SEKARANG SUDAH WAKTU LOKAL
         denda: denda
     });
 
+    // Update Stok
     const b = state.books.find(b => b.judul === loan.judulBuku);
     if(b) b.stok = parseInt(b.stok) + (parseInt(loan.jumlah) || 1);
 
+    // Hapus dari daftar pinjam aktif
     state.loans = state.loans.filter(l => l.id !== id);
-playSuccessSound();
+
+    playSuccessSound();
     refreshUI();
     saveToCloud();
     showToast("Buku telah dikembalikan");
 }
+
 
 function renderHistory(list) {
     const container = document.getElementById('list-history');
