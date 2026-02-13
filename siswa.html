@@ -375,32 +375,32 @@
     document.querySelector('#loadingOverlay p').innerText = "Sinkronisasi Data...";
 
     try {
-        // 1. AMBIL DATA TERBARU (Sangat Penting: Ambil SEMUA sheet)
         const response = await fetch(APPS_SCRIPT_URL);
         const cloudData = await response.json();
         
-        // 2. Update state lokal (PASTIKAN 'anggota/members' ikut diambil agar tidak hilang)
         state.books = cloudData.buku || [];
-        state.members = cloudData.anggota || []; // <--- BARIS INI YANG TADI HILANG
+        state.members = cloudData.anggota || [];
         state.loans = cloudData.pinjaman || [];
         state.history = cloudData.riwayat || [];
         state.visitors = cloudData.tamu || [];
 
-        // 3. Tambahkan kunjungan baru ke array visitors
+        // --- PERBAIKAN ZONA WAKTU ---
+        const sekarang = new Date();
+        const offset = sekarang.getTimezoneOffset() * 60000;
+        const waktuLokal = new Date(sekarang - offset).toISOString();
+
         currentStudent = { nama: name, kelas: cls };
         const newVisitor = {
-    id: Date.now(),
-    nama: name,
-    kelas: cls,
-    tujuan: purpose,
-    waktu: new Date().toISOString() 
-};
+            id: Date.now(),
+            nama: name,
+            kelas: cls,
+            tujuan: purpose,
+            waktu: waktuLokal // Menggunakan waktu lokal WIB
+        };
         state.visitors.push(newVisitor);
 
-        // 4. Kirim balik ke cloud (Sekarang state.members sudah ada isinya, jadi aman)
         await saveToCloud();
         
-        // Setup UI
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('mainApp').classList.remove('hidden');
         document.getElementById('welcomeName').innerText = `Halo, ${name.split(' ')[0]}!`;
