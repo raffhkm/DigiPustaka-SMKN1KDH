@@ -302,19 +302,7 @@
         <span id="visitor-count-badge" class="bg-purple-100 text-purple-600 text-[10px] px-2 py-1 rounded-lg font-black uppercase">0 Orang</span>
     </div>
 
-    <div class="flex gap-2 items-center bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
-        <div class="flex-1 relative">
-            <i class="fas fa-calendar-day absolute left-3 top-1/2 -translate-y-1/2 text-purple-400 text-xs"></i>
-            <input type="date" id="filter-date-tamu" 
-                class="w-full pl-9 pr-3 py-2 bg-slate-50 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                onchange="renderVisitors()">
-        </div>
-        <button onclick="resetFilterTamu()" class="px-3 py-2 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-bold uppercase hover:bg-slate-200">
-            Semua
-        </button>
-     
-    </div>
-</div>
+    
 
     <div id="list-visitors" class="space-y-3 pb-24"></div>
 </section>
@@ -1294,24 +1282,13 @@ function addVisitor() {
 function renderVisitors() {
     const container = document.getElementById('list-visitors');
     const badge = document.getElementById('visitor-count-badge');
-    const filterDate = document.getElementById('filter-date-tamu').value; // Ambil nilai tanggal dari input
     
     if (!state.visitors) state.visitors = [];
     
-    // Proses Filter dan Sortir
-    let filteredVisitors = [...state.visitors];
-
-    // Jika user memilih tanggal, filter datanya
-    if (filterDate) {
-        filteredVisitors = filteredVisitors.filter(v => {
-            const dateV = new Date(v.waktu).toISOString().split('T')[0];
-            return dateV === filterDate;
-        });
-    }
-
-    const sortedVisitors = filteredVisitors.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
+    // Langsung urutkan data dari yang terbaru tanpa filter tanggal
+    const sortedVisitors = [...state.visitors].sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
     
-    badge.innerText = `${sortedVisitors.length} Kunjungan ${filterDate ? 'Terfilter' : 'Total'}`;
+    badge.innerText = `${sortedVisitors.length} Kunjungan Total`;
 
     container.innerHTML = sortedVisitors.map(v => `
         <div class="glass-card p-4 rounded-2xl flex justify-between items-center border-l-4 border-purple-500 mb-3 animate-in fade-in duration-300">
@@ -1336,17 +1313,13 @@ function renderVisitors() {
         </div>
     `).join('') || `
         <div class="text-center py-10 opacity-30">
-            <i class="fas fa-calendar-xmark text-3xl mb-2"></i>
-            <p class="text-xs italic">Tidak ada kunjungan pada tanggal ini</p>
+            <i class="fas fa-users text-3xl mb-2"></i>
+            <p class="text-xs italic">Belum ada data kunjungan</p>
         </div>
     `;
 }
 
 // Tambahkan fungsi pembantu untuk reset filter
-function resetFilterTamu() {
-    document.getElementById('filter-date-tamu').value = "";
-    renderVisitors();
-}
 
 // Hapus SATU data tamu
 async function deleteVisitor(id) {
