@@ -389,12 +389,12 @@
         // 3. Tambahkan kunjungan baru ke array visitors
         currentStudent = { nama: name, kelas: cls };
         const newVisitor = {
-            id: Date.now(),
-            nama: name,
-            kelas: cls,
-            tujuan: purpose,
-            waktu: new Date().toLocaleString('id-ID')
-        };
+    id: Date.now(),
+    nama: name,
+    kelas: cls,
+    tujuan: purpose,
+    waktu: new Date().toISOString() 
+};
         state.visitors.push(newVisitor);
 
         // 4. Kirim balik ke cloud (Sekarang state.members sudah ada isinya, jadi aman)
