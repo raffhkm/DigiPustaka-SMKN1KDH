@@ -301,6 +301,17 @@
         </button>
         <span id="visitor-count-badge" class="bg-purple-100 text-purple-600 text-[10px] px-2 py-1 rounded-lg font-black uppercase">0 Orang</span>
     </div>
+<div class="space-y-2 mb-4">
+    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Filter Kunjungan Per Tanggal:</label>
+    <div class="flex gap-2">
+        <input type="date" id="filter-date-guest" 
+            class="flex-1 p-4 bg-white rounded-2xl text-sm outline-none border border-slate-100 shadow-sm"
+            onchange="renderVisitors()">
+        <button onclick="resetGuestFilter()" class="px-4 bg-slate-200 text-slate-600 rounded-2xl text-xs font-bold">
+            Reset
+        </button>
+    </div>
+</div>
 
     
 
@@ -434,7 +445,19 @@
     <button onclick="clearAllHistory()" class="bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow hover:bg-red-700 transition-colors">
         Hapus Semua Riwayat
     </button>
+
 </div>
+
+</div>    <div class="space-y-2 mb-4">
+    <label style="color: black;" class="text-[10px] font-black text-slate-400 uppercase ml-1">Filter Berdasarkan Tanggal:</label>
+    <div class="flex gap-2">
+        <input type="date" id="filter-date-history" 
+            class="flex-1 p-4 bg-white rounded-2xl text-sm outline-none border border-slate-100 shadow-sm"
+            onchange="filterHistoryByDate()">
+        <button onclick="resetHistoryFilter()" class="px-4 bg-slate-200 text-slate-600 rounded-2xl text-xs font-bold">
+            Reset
+        </button>
+    </div>
                     <input type="text" placeholder="Cari riwayat siswa atau buku..." 
                         class="w-full pl-12 pr-4 py-4 bg-white search-input rounded-2xl text-sm" 
                         onkeyup="searchHistory(this.value)">
@@ -616,6 +639,35 @@ function renderBooks(list, category = 'Pelajaran') {
             </div>
         </div>
     `).join('') || '<div class="text-center py-10 opacity-30 text-xs italic">Belum ada buku di kategori ini</div>';
+}
+function addVisitor() {
+    const name = document.getElementById('guest-name').value;
+    const cls = document.getElementById('guest-class').value;
+    const purp = document.getElementById('guest-purpose').value;
+
+    if(!name || !cls) return showToast("Nama dan Kelas wajib diisi!", true);
+
+    // --- FIX JAM WIB ---
+    const sekarang = new Date();
+    const offset = sekarang.getTimezoneOffset() * 60000;
+    const waktuLokal = new Date(sekarang - offset).toISOString();
+
+    const newVisitor = {
+        id: Date.now(),
+        nama: name,
+        kelas: cls,
+        tujuan: purp,
+        waktu: waktuLokal 
+    };
+
+    state.visitors.unshift(newVisitor);
+    
+    document.getElementById('guest-name').value = "";
+    document.getElementById('guest-class').value = "";
+    
+    renderVisitors();
+    saveToCloud();
+    showToast("Data kunjungan tersimpan!");
 }
 
 function deleteBook(id) {
@@ -838,6 +890,31 @@ if(state.books.length > 0){
     refreshUI();
     saveToCloud();
     showToast("Data pinjaman & stok berhasil disesuaikan!");
+}
+// Fungsi untuk menyaring riwayat berdasarkan tanggal
+function filterHistoryByDate() {
+    const selectedDate = document.getElementById('filter-date-history').value;
+    if (!selectedDate) return renderHistory(state.history);
+
+    const filtered = state.history.filter(h => {
+        // Ambil bagian tanggal saja (YYYY-MM-DD) dari ISO String
+        const itemDate = (h.tglKembali || h.tanggalKembali).split('T')[0];
+        return itemDate === selectedDate;
+    });
+
+    renderHistory(filtered);
+    
+    if(filtered.length === 0) {
+        showToast("Tidak ada riwayat pada tanggal ini", true);
+    }
+}
+
+// Fungsi untuk mereset filter kembali ke semua data
+function resetHistoryFilter() {
+    document.getElementById('filter-date-history').value = "";
+    document.getElementById('filter-date-history').type = 'text'; // Trik reset visual
+    document.getElementById('filter-date-history').type = 'date';
+    renderHistory(state.history);
 }
 
 
@@ -1102,27 +1179,31 @@ setInterval(() => {
 function formatTanggalJamID(tgl) {
     if (!tgl || tgl === "") return "-";
     
-    // Coba buat objek date
-    let d = new Date(tgl);
-    
-    // Jika Invalid (biasanya karena format tgl/bln/thn dari Sheet)
-    if (isNaN(d.getTime())) {
-        // Cek jika formatnya string seperti "11/02/2026 19:00:00"
-        // Kita coba ganti karakter yang sering bikin error
-        let cleanedTgl = tgl.toString().replace(/-/g, '/'); 
-        d = new Date(cleanedTgl);
+    try {
+        // Jika formatnya ISO (2026-02-14T01:10:00.000Z)
+        if (tgl.includes('T')) {
+            const bagian = tgl.split('T');
+            const tglPart = bagian[0].split('-'); // [2026, 02, 14]
+            const jamPart = bagian[1].split(':'); // [01, 10, ...]
+            
+            const bulanIndo = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+            
+            return `${tglPart[2]} ${bulanIndo[parseInt(tglPart[1]) - 1]} ${tglPart[0]}, ${jamPart[0]}:${jamPart[1]}`;
+        }
+        
+        // Jika format lain, coba format biasa
+        let d = new Date(tgl);
+        if (isNaN(d.getTime())) return tgl; 
+        return d.toLocaleString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).replace(/\./g, ':');
+    } catch (e) {
+        return tgl;
     }
-
-    // Jika masih Invalid, tampilkan teks aslinya saja daripada "Invalid Date"
-    if (isNaN(d.getTime())) return tgl; 
-
-    return d.toLocaleString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    }).replace(/\./g, ':'); // Mengubah titik jadi titik dua pada jam
 }
 
 function hitungDenda(tglKembali, tglReal) {
@@ -1228,20 +1309,24 @@ async function processLoan() {
     
     if(b.stok < qty) return showToast("Stok tidak mencukupi!", true);
 
+    // --- FIX JAM WIB ---
+    const sekarang = new Date();
+    const offset = sekarang.getTimezoneOffset() * 60000;
+    const waktuLokal = new Date(sekarang - offset).toISOString();
+
     state.loans.push({
         id: Date.now(),
         namaAnggota: m.nama,
         kelas: m.kelas,
         judulBuku: b.judul,
         jumlah: qty,
-        tglPinjam: new Date().toISOString(),
+        tglPinjam: waktuLokal,
         tglKembali: due,
         status: 'Dipinjam'
     });
 
     b.stok -= qty;
 
-    // Bersihkan form
     resetMemberSelection();
     resetBookSelection();
     document.getElementById('loan-due').value = "";
@@ -1250,47 +1335,35 @@ async function processLoan() {
     nav('dashboard');
     showToast("Berhasil dipinjam!");
 }
-// Tambahkan di let state paling atas
-// let state = { ..., visitors: [] };
-
-function addVisitor() {
-    const name = document.getElementById('guest-name').value;
-    const cls = document.getElementById('guest-class').value;
-    const purp = document.getElementById('guest-purpose').value;
-
-    if(!name || !cls) return showToast("Nama dan Kelas wajib diisi!", true);
-
-    const newVisitor = {
-        id: Date.now(),
-        nama: name,
-        kelas: cls,
-        tujuan: purp,
-        waktu: new Date().toISOString()
-    };
-
-    state.visitors.unshift(newVisitor); // Tambah ke paling atas
-    
-    // Reset form
-    document.getElementById('guest-name').value = "";
-    document.getElementById('guest-class').value = "";
-    
-    renderVisitors();
-    saveToCloud();
-    showToast("Data kunjungan tersimpan!");
-}
 
 function renderVisitors() {
     const container = document.getElementById('list-visitors');
     const badge = document.getElementById('visitor-count-badge');
+    const filterDate = document.getElementById('filter-date-guest').value; 
     
     if (!state.visitors) state.visitors = [];
     
-    // Langsung urutkan data dari yang terbaru tanpa filter tanggal
-    const sortedVisitors = [...state.visitors].sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
-    
-    badge.innerText = `${sortedVisitors.length} Kunjungan Total`;
+    let displayData = [...state.visitors];
 
-    container.innerHTML = sortedVisitors.map(v => `
+    if (filterDate) {
+        displayData = displayData.filter(v => {
+            // KONVERSI KE WAKTU LOKAL SEBELUM DI-FILTER
+            const d = new Date(v.waktu);
+            const localYear = d.getFullYear();
+            const localMonth = String(d.getMonth() + 1).padStart(2, '0');
+            const localDay = String(d.getDate()).padStart(2, '0');
+            
+            const vLocalDate = `${localYear}-${localMonth}-${localDay}`;
+            return vLocalDate === filterDate;
+        });
+    }
+
+    // Urutkan dari yang terbaru
+    displayData.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
+    
+    badge.innerText = `${displayData.length} Kunjungan ${filterDate ? 'Terfilter' : 'Total'}`;
+
+    container.innerHTML = displayData.map(v => `
         <div class="glass-card p-4 rounded-2xl flex justify-between items-center border-l-4 border-purple-500 mb-3 animate-in fade-in duration-300">
             <div class="flex items-center gap-4">
                 <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center">
@@ -1314,9 +1387,15 @@ function renderVisitors() {
     `).join('') || `
         <div class="text-center py-10 opacity-30">
             <i class="fas fa-users text-3xl mb-2"></i>
-            <p class="text-xs italic">Belum ada data kunjungan</p>
+            <p class="text-xs italic">Tidak ada data kunjungan pada tanggal ini</p>
         </div>
     `;
+}
+
+// Fungsi untuk mereset filter tanggal tamu
+function resetGuestFilter() {
+    document.getElementById('filter-date-guest').value = "";
+    renderVisitors();
 }
 
 // Tambahkan fungsi pembantu untuk reset filter
