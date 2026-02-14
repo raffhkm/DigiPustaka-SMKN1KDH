@@ -1322,7 +1322,7 @@ async function processLoan() {
 
     // --- FIX JAM WIB ---
     const sekarang = new Date();
-    const offset = sekarang.getTimezoneOffset() * 60000;
+    const offset = sekarang.getTimezoneOffset() * 0;
     const waktuLokal = new Date(sekarang - offset).toISOString();
 
     state.loans.push({
@@ -1358,18 +1358,14 @@ function renderVisitors() {
 
     if (filterDate) {
         displayData = displayData.filter(v => {
-            // KONVERSI KE WAKTU LOKAL SEBELUM DI-FILTER
-            const d = new Date(v.waktu);
-            const localYear = d.getFullYear();
-            const localMonth = String(d.getMonth() + 1).padStart(2, '0');
-            const localDay = String(d.getDate()).padStart(2, '0');
-            
-            const vLocalDate = `${localYear}-${localMonth}-${localDay}`;
-            return vLocalDate === filterDate;
+            // Kita ambil teks murni 'YYYY-MM-DD' dari data database
+            // tanpa mengubahnya menjadi objek Date agar tidak terkena konversi jam +7
+            const tglMentah = v.waktu.split('T')[0]; 
+            return tglMentah === filterDate;
         });
     }
 
-    // Urutkan dari yang terbaru
+    // Untuk sorting tetap pakai Date agar urutannya benar
     displayData.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
     
     badge.innerText = `${displayData.length} Kunjungan ${filterDate ? 'Terfilter' : 'Total'}`;
@@ -1398,7 +1394,7 @@ function renderVisitors() {
     `).join('') || `
         <div class="text-center py-10 opacity-30">
             <i class="fas fa-users text-3xl mb-2"></i>
-            <p class="text-xs italic">Tidak ada data kunjungan pada tanggal ini</p>
+            <p class="text-xs italic">Tidak ada data untuk tanggal ini</p>
         </div>
     `;
 }
