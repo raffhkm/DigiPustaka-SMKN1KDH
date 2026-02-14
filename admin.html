@@ -120,12 +120,13 @@
 <body class="pb-24">
 
     <!-- TOAST NOTIFICATION -->
-    <div id="toast" class="fixed bottom-28 left-6 right-6 z-[3000] hidden transition-all duration-300">
-        <div class="bg-slate-900 text-white px-6 py-4 rounded-2xl flex items-center gap-3 shadow-2xl">
-            <i id="toastIcon" class="fas fa-check-circle text-emerald-400"></i>
-            <span id="toastMsg" class="text-sm font-medium">Data Berhasil Disimpan!</span>
-        </div>
+    <div id="toast" class="fixed bottom-10 left-10 right-10 z-[9999] hidden transition-all duration-500 opacity-0 pointer-events-none">
+    <div class="bg-slate-900/95 backdrop-blur text-white px-6 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-2xl border border-white/10">
+        <i id="toastIcon" class="fas fa-check-circle text-emerald-400"></i>
+        <span id="toastMsg" class="text-sm font-bold tracking-tight"></span>
     </div>
+</div>
+
 
     <!-- LOADING OVERLAY -->
     <div id="loadingOverlay" class="fixed inset-0 z-[2000] hidden bg-white/70 backdrop-blur-sm flex items-center justify-center">
@@ -438,17 +439,16 @@
                     <i class="fas fa-circle-info text-amber-500"></i>
                     <p class="text-[10px] text-amber-800 font-bold uppercase leading-tight tracking-tight">Denda otomatis dihitung Rp 2.000 / hari jika terlambat</p>
                 </div>
-
-                <div class="relative">
-                    <i class="fas fa-search absolute left-4 top-4 text-slate-300"></i>
-                    <div class="flex justify-end mb-4">
-    <button onclick="clearAllHistory()" class="bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow hover:bg-red-700 transition-colors">
-        Hapus Semua Riwayat
+<div class="flex gap-2 mb-4">
+    <button onclick="exportToPDF()" class="flex-1 bg-emerald-600 text-white px-4 py-3 rounded-2xl font-bold text-xs shadow-lg flex items-center justify-center gap-2">
+        <i class="fas fa-file-pdf"></i> Lihat & Cetak PDF
     </button>
-
+    <button onclick="clearAllHistory()" class="bg-red-50 text-red-600 px-4 py-3 rounded-2xl font-bold text-xs border border-red-100">
+        <i class="fas fa-trash-can"></i>
+    </button>
 </div>
 
-</div>    <div class="space-y-2 mb-4">
+  <div class="space-y-2 mb-4">
     <label style="color: black;" class="text-[10px] font-black text-slate-400 uppercase ml-1">Filter Berdasarkan Tanggal:</label>
     <div class="flex gap-2">
         <input type="date" id="filter-date-history" 
@@ -512,14 +512,33 @@ if (localBackup) {
         const DENDA_PER_HARI = 2000;
 
         // UI HELPERS
-        function showToast(msg, isError = false) {
-            const toast = document.getElementById('toast');
-            document.getElementById('toastMsg').innerText = msg;
-            document.getElementById('toastIcon').className = isError ? "fas fa-circle-exclamation text-red-500" : "fas fa-check-circle text-emerald-400";
-            toast.classList.remove('hidden');
-            setTimeout(() => toast.style.transform = "translateY(-10px)", 10);
-            setTimeout(() => { toast.style.transform = "translateY(100px)"; setTimeout(() => toast.classList.add('hidden'), 300); }, 3000);
-        }
+        // Update fungsi showToast agar selalu di atas modal
+function showToast(msg, isError = false) {
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toastMsg');
+    const toastIcon = document.getElementById('toastIcon');
+    
+    // Pastikan Toast berada di lapisan paling atas (z-index 9999)
+    toast.style.zIndex = "9999"; 
+    
+    toastMsg.innerText = msg;
+    toastIcon.className = isError ? "fas fa-circle-exclamation text-red-500" : "fas fa-check-circle text-emerald-400";
+    
+    toast.classList.remove('hidden');
+    // Efek muncul dari bawah
+    setTimeout(() => {
+        toast.style.transform = "translateY(-20px)";
+        toast.style.opacity = "1";
+    }, 10);
+
+    // Otomatis hilang dalam 2.5 detik tanpa perlu klik apa-apa
+    setTimeout(() => {
+        toast.style.transform = "translateY(100px)";
+        toast.style.opacity = "0";
+        setTimeout(() => toast.classList.add('hidden'), 300);
+    }, 2500);
+}
+
 
         function handleLogin() {
             if(document.getElementById('adminPass').value === "123") {
@@ -739,6 +758,76 @@ renderBooks(state.books, cat); // <--- SAMAKAN DENGAN NAMA FUNGSI DI BAWAHNYA
 if(state.books.length > 0){
     renderBooks(state.books, 'Pelajaran');
 }
+function exportToPDFReal() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+
+    showToast("📄 File PDF sedang didownload...");
+
+    // 1. Setting Header Laporan
+    doc.setFont("courier", "bold");
+    doc.setFontSize(18);
+    doc.text("DIGIPUSTAKA DIGITAL", 105, 20, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setFont("courier", "normal");
+    doc.text("Laporan Riwayat Peminjaman & Pengembalian Buku", 105, 26, { align: "center" });
+    doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')} WIB`, 105, 31, { align: "center" });
+    
+    // Garis Pemisah
+    doc.setLineWidth(0.5);
+    doc.line(15, 35, 195, 35);
+
+    // 2. Ambil Data dari State History
+    const rows = state.history.map((h, i) => [
+        i + 1,
+        `${h.nama}\n(${h.kelas})`,
+        h.buku,
+        formatTanggalID(h.tglPinjam),
+        formatTanggalID(h.tglKembali),
+        `Rp ${(h.denda || 0).toLocaleString('id-ID')}`
+    ]);
+
+    // 3. Generate Tabel menggunakan AutoTable
+    doc.autoTable({
+        startY: 40,
+        head: [['NO', 'NAMA SISWA', 'JUDUL BUKU', 'TGL PINJAM', 'TGL KEMBALI', 'DENDA']],
+        body: rows,
+        theme: 'grid',
+        headStyles: { 
+            fillColor: [30, 41, 59], 
+            textColor: [255, 255, 255],
+            font: 'courier',
+            halign: 'center'
+        },
+        styles: { 
+            font: 'courier', 
+            fontSize: 8,
+            cellPadding: 3
+        },
+        columnStyles: {
+            0: { halign: 'center', cellWidth: 10 },
+            5: { halign: 'right', fontStyle: 'bold' }
+        }
+    });
+
+    // 4. Footer Tanda Tangan
+    const finalY = doc.lastAutoTable.finalY + 15;
+    doc.setFontSize(9);
+    doc.text("Petugas Perpustakaan,", 150, finalY);
+    doc.text("____________________", 150, finalY + 20);
+    doc.setFont("courier", "bold");
+    doc.text("Admin DigiPustaka", 150, finalY + 25);
+
+    // 5. Simpan File
+    const tanggal = new Date().toISOString().split('T')[0];
+    doc.save(`Laporan_DigiPustaka_${tanggal}.pdf`);
+    
+    setTimeout(() => {
+        showToast("✅ PDF Berhasil Tersimpan!");
+    }, 500);
+}
+
 
     function renderLoans(list) {
     const today = new Date();
@@ -1043,7 +1132,34 @@ function resetLoanForm() {
     saveToCloud();
     showToast("Buku telah dikembalikan");
 }
+function exportToPDF() {
+    const tableBody = document.getElementById('reportTableBody');
+    const timestamp = document.getElementById('reportTimestamp');
+    
+    // Set Waktu Cetak
+    timestamp.innerText = `Dicetak pada: ${new Date().toLocaleString('id-ID')} WIB`;
 
+    // Cek jika data kosong
+    if (state.history.length === 0) {
+        return showToast("Tidak ada data riwayat untuk dilaporkan", true);
+    }
+
+    // Isi Tabel
+    tableBody.innerHTML = state.history.map((h, i) => `
+        <tr class="border-b border-slate-100">
+            <td class="py-3">${i + 1}</td>
+            <td class="py-3 font-bold">${h.nama}<br><span class="text-[9px] font-normal text-slate-500">${h.kelas}</span></td>
+            <td class="py-3">${h.buku}</td>
+            <td class="py-3 text-center">${formatTanggalID(h.tglPinjam)}</td>
+            <td class="py-3 text-center">${formatTanggalID(h.tglKembali)}</td>
+            <td class="py-3 text-right font-bold text-red-600">Rp ${(h.denda || 0).toLocaleString('id-ID')}</td>
+        </tr>
+    `).join('');
+
+    // Munculkan Modal
+    document.getElementById('reportModal').classList.remove('hidden');
+    showToast("Laporan Berhasil Dibuat");
+}
 
 function renderHistory(list) {
     const container = document.getElementById('list-history');
@@ -1749,6 +1865,37 @@ async function saveBookChanges() {
         showToast("Buku berhasil diperbarui!");
     }
 }
+async function saveAsImage() {
+    const areaLaporan = document.getElementById('printArea');
+    
+    showToast("Sedang memproses gambar...");
+
+    html2canvas(areaLaporan, {
+        scale: 3, // Saya naikkan ke 3 biar makin jernih kalau di-print
+        backgroundColor: "#ffffff",
+        logging: false,
+        useCORS: true
+    }).then(canvas => {
+        const image = canvas.toDataURL("image/png");
+        const link = document.createElement('a');
+        const tanggal = new Date().toISOString().split('T')[0];
+        
+        link.href = image;
+        link.download = `Laporan_Perpus_${tanggal}.png`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // --- BAGIAN YANG DIGANTI ---
+        // Kita hapus alert() jadul, ganti pakai Toast sukses
+        showToast("📸 Berhasil disimpan ke Galeri!");
+        
+    }).catch(err => {
+        console.error(err);
+        showToast("Gagal menyimpan gambar", true);
+    });
+}
 
 </script>
 <div id="customModal" class="fixed inset-0 z-[5000] hidden flex items-center justify-center p-6">
@@ -1846,6 +1993,63 @@ async function saveBookChanges() {
         </div>
     </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<div id="reportModal" class="fixed inset-0 z-[7000] hidden flex flex-col bg-slate-900/90 backdrop-blur-md p-4">
+    <div class="bg-white w-full max-w-4xl mx-auto rounded-3xl overflow-hidden flex flex-col h-full shadow-2xl">
+        <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
+            <div>
+                <h3 class="font-black text-slate-800">Preview Laporan Resmi</h3>
+                <p class="text-[10px] text-slate-500 uppercase font-bold">Silakan screenshot untuk arsip</p>
+            </div>
+            <button onclick="document.getElementById('reportModal').classList.add('hidden')" class="w-10 h-10 bg-red-100 text-red-600 rounded-xl flex items-center justify-center">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto bg-slate-200 p-4 md:p-8">
+            <div id="printArea" class="bg-white mx-auto p-8 shadow-sm min-h-[100%] w-full max-w-[800px] text-black family-serif" style="font-family: 'Courier New', Courier, monospace;">
+                <div class="text-center border-b-2 border-double border-black pb-4 mb-6">
+                    <h1 class="text-2xl font-bold uppercase">DigiPustaka Digital</h1>
+                    <p class="text-sm">Laporan Riwayat Peminjaman & Pengembalian Buku</p>
+                    <p class="text-[10px] mt-1 italic" id="reportTimestamp"></p>
+                </div>
 
+                <table class="w-full text-[11px] border-collapse">
+                    <thead>
+                        <tr class="border-b-2 border-black">
+                            <th class="py-2 text-left">NO</th>
+                            <th class="py-2 text-left">NAMA SISWA</th>
+                            <th class="py-2 text-left">BUKU</th>
+                            <th class="py-2 text-center">TGL PINJAM</th>
+                            <th class="py-2 text-center">TGL KEMBALI</th>
+                            <th class="py-2 text-right">DENDA</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody">
+                        </tbody>
+                </table>
+
+                <div class="mt-10 flex justify-end">
+                    <div class="text-center w-48">
+                        <p class="text-[10px] mb-12">Petugas Perpustakaan,</p>
+                        <p class="font-bold border-t border-black pt-1">Admin DigiPustaka</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+       <div class="p-4 bg-white border-t border-slate-100 flex gap-3 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+    <button onclick="exportToPDFReal()" class="flex-1 bg-slate-100 text-slate-700 py-3.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all">
+        <i class="fas fa-file-pdf text-red-500 text-base"></i> PDF
+    </button>
+
+    <button onclick="saveAsImage()" class="flex-[2] bg-emerald-600 text-white py-3.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 active:scale-95 transition-all">
+        <i class="fas fa-image text-base"></i> SIMPAN KE GALERI
+    </button>
+</div>
+
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
