@@ -830,17 +830,33 @@ function exportToPDFReal() {
 
 
     function renderLoans(list) {
-    const today = new Date();
-    today.setHours(0,0,0,0);
+    // Gunakan waktu lokal saat ini tanpa pengaruh jam UTC
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
     const container = document.getElementById('list-pinjam-active');
     
     container.innerHTML = list.map(l => {
-        const due = new Date(l.tglKembali);
+        // Ambil tanggal kembali dan set ke jam 00:00 lokal untuk perbandingan apel-ke-apel
+        const dueDateRaw = new Date(l.tglKembali);
+        const due = new Date(dueDateRaw.getFullYear(), dueDateRaw.getMonth(), dueDateRaw.getDate());
+        
         const timeDiff = due - today;
         const dayDiff = Math.ceil(timeDiff / (86400000));
         
-        let countdownText = dayDiff < 0 ? `Terlambat ${Math.abs(dayDiff)} Hari` : `Sisa ${dayDiff} Hari`;
-        let countdownClass = dayDiff < 0 ? "bg-red-100 text-red-600" : (dayDiff <= 1 ? "bg-orange-100 text-orange-600" : "bg-emerald-100 text-emerald-600");
+        let countdownText = "";
+        let countdownClass = "";
+
+        if (dayDiff < 0) {
+            countdownText = `Terlambat ${Math.abs(dayDiff)} Hari`;
+            countdownClass = "bg-red-100 text-red-600";
+        } else if (dayDiff === 0) {
+            countdownText = "Harus Kembali Hari Ini";
+            countdownClass = "bg-orange-100 text-orange-600 animate-pulse";
+        } else {
+            countdownText = `Sisa ${dayDiff} Hari`;
+            countdownClass = "bg-emerald-100 text-emerald-600";
+        }
 
         return `
         <div class="glass-card p-5 rounded-[32px] border-l-8 ${dayDiff < 0 ? 'border-red-500' : 'border-blue-600'} mb-4 shadow-sm">
@@ -1092,23 +1108,21 @@ function resetLoanForm() {
     const waktuSekarangLokal = new Date(sekarang - offset).toISOString();
 
     const due = new Date(loan.tglKembali);
-    const now = new Date(sekarang - offset); // Gunakan objek lokal untuk hitung denda
-
+const now = new Date(); // Waktu sekarang
     // Pastikan tglPinjam mengambil dari data pinjaman
     const tanggalAsliPinjam = loan.tglPinjam; 
+due.setHours(0, 0, 0, 0);
+now.setHours(0, 0, 0, 0);
 
-    let denda = 0;
-    const dueDateOnly = new Date(due);
-    const nowDateOnly = new Date(now);
-    
-    dueDateOnly.setHours(0,0,0,0);
-    nowDateOnly.setHours(0,0,0,0);
+ let denda = 0;
+// Jika hari ini LEBIH BESAR dari batas kembali, baru kena denda
+if (now > due) {
+    const diffTime = Math.abs(now - due);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    denda = diffDays * DENDA_PER_HARI;
+}
 
-    // Hitung denda jika hari ini melewati batas kembali
-    if(nowDateOnly > dueDateOnly) {
-        const diffDays = Math.ceil((nowDateOnly - dueDateOnly) / 86400000);
-        denda = diffDays * DENDA_PER_HARI;
-    }
+
 
     // Masukkan ke riwayat dengan waktu lokal yang benar
     state.history.unshift({
@@ -1168,9 +1182,10 @@ function renderHistory(list) {
     container.innerHTML = list.map((h, index) => {
         const denda = parseInt(h.denda) || 0;
         
-        // Pastikan mengambil properti yang benar sesuai kolom di Google Sheets
-        const tglP = h.tglPinjam || h.tanggalPinjam;
-        const tglK = h.tglKembali || h.tanggalKembali;
+        // Ambil teks asli dari sheet tanpa konversi Date
+       // Di dalam loop .map pada renderHistory
+const tglP = h.tglPinjam || h.tanggalPinjam;
+const tglK = h.tglKembali || h.tanggalKembali;
 
         return `
         <div class="glass-card p-5 rounded-[24px] flex justify-between items-start border-l-8 ${denda > 0 ? 'border-red-500' : 'border-emerald-500'} mb-4 relative overflow-hidden group">
@@ -1288,50 +1303,52 @@ function getNowID() {
 function formatTanggalID(tgl) {
     if (!tgl || tgl === "") return "-";
     try {
-        const d = new Date(tgl);
-        if (isNaN(d.getTime())) return "-";
-        return d.toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-        });
+        // Mengambil 10 karakter pertama (YYYY-MM-DD) 
+        // Ini kunci agar jam/menit tidak merusak penanggalan
+        const tglMentah = tgl.includes('T') ? tgl.split('T')[0] : tgl.split(' ')[0];
+        const bagian = tglMentah.split('-'); 
+
+        if (bagian.length < 3) return tgl;
+
+        const bulanIndo = [
+            "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+            "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+        ];
+
+        const tahun = bagian[0];
+        const bulan = bulanIndo[parseInt(bagian[1]) - 1];
+        const hari = bagian[2];
+
+        return `${hari} ${bulan} ${tahun}`;
     } catch (e) {
-        return "-";
+        console.error("Error format tanggal:", e);
+        return tgl;
     }
 }
 
-setInterval(() => {
-  renderLoans(state.loans.filter(l => l.status === 'Dipinjam'));
-}, 1000);
 function formatTanggalJamID(tgl) {
     if (!tgl || tgl === "") return "-";
-    
     try {
-        // Jika formatnya ISO (2026-02-14T01:10:00.000Z)
+        // Jika input sudah dalam format ISO (ada huruf T)
+        // Kita ambil bagian tanggal dan jamnya saja secara manual
         if (tgl.includes('T')) {
-            const bagian = tgl.split('T');
-            const tglPart = bagian[0].split('-'); // [2026, 02, 14]
-            const jamPart = bagian[1].split(':'); // [01, 10, ...]
+            const parts = tgl.split('T');
+            const datePart = parts[0]; // YYYY-MM-DD
+            const timePart = parts[1].substring(0, 5); // HH:mm
             
-            const bulanIndo = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+            const d = datePart.split('-');
+            const bulanIndo = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
             
-            return `${tglPart[2]} ${bulanIndo[parseInt(tglPart[1]) - 1]} ${tglPart[0]}, ${jamPart[0]}:${jamPart[1]}`;
+            return `${d[2]} ${bulanIndo[parseInt(d[1]) - 1]} ${d[0]}, ${timePart}`;
         }
         
-        // Jika format lain, coba format biasa
-        let d = new Date(tgl);
-        if (isNaN(d.getTime())) return tgl; 
-        return d.toLocaleString('id-ID', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        }).replace(/\./g, ':');
+        // Jika format lain, coba kembalikan apa adanya agar tidak rusak
+        return tgl;
     } catch (e) {
         return tgl;
     }
 }
+
 
 function hitungDenda(tglKembali, tglReal) {
   if (!tglKembali || !tglReal) return 0;
@@ -1437,20 +1454,22 @@ async function processLoan() {
     if(b.stok < qty) return showToast("Stok tidak mencukupi!", true);
 
     // --- FIX JAM WIB ---
-    const sekarang = new Date();
-    const offset = sekarang.getTimezoneOffset() * 0;
-    const waktuLokal = new Date(sekarang - offset).toISOString();
+    // Mengambil waktu sekarang dan menyesuaikannya ke zona waktu lokal
+const sekarang = new Date();
+const offset = sekarang.getTimezoneOffset() * 60000; // dalam milidetik
+const waktuLokal = new Date(sekarang - offset).toISOString();
 
-    state.loans.push({
-        id: Date.now(),
-        namaAnggota: m.nama,
-        kelas: m.kelas,
-        judulBuku: b.judul,
-        jumlah: qty,
-        tglPinjam: waktuLokal,
-        tglKembali: due,
-        status: 'Dipinjam'
-    });
+state.loans.push({
+    id: Date.now(),
+    namaAnggota: m.nama,
+    kelas: m.kelas,
+    judulBuku: b.judul,
+    jumlah: qty,
+    tglPinjam: waktuLokal, // Menggunakan waktu lokal yang sudah dikoreksi
+    tglKembali: due,
+    status: 'Dipinjam'
+});
+
 
     b.stok -= qty;
 
