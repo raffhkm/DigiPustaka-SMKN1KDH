@@ -431,16 +431,17 @@ async function studentReturnBook(id) {
             document.getElementById('loadingOverlay').classList.remove('hidden');
             document.querySelector('#loadingOverlay p').innerText = "Memproses Pengembalian...";
 
+
             try {
                 // 1. Tambahkan ke Riwayat
                 const historyEntry = {
-                    id: Date.now(),
-                    nama: loan.namaAnggota,
-                    buku: loan.judulBuku,
-                    tglPinjam: loan.tglPinjam,
-                    tglKembali: new Date().toISOString(),
-                    status: "Selesai"
-                };
+    id: Date.now(),
+    nama: loan.namaAnggota,
+    buku: loan.judulBuku,
+    tglPinjam: loan.tglPinjam,
+    tglKembali: getISOStringNow(), // 🔥 ISO UTC
+    status: "Selesai"
+};
                 state.history.unshift(historyEntry);
 
                 // 2. Kembalikan Stok Buku
@@ -471,7 +472,12 @@ async function studentReturnBook(id) {
         }
     });
 }
-
+function getISOStringNow() {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000;
+    const localISO = new Date(now.getTime() - offset).toISOString();
+    return localISO;
+}
     function logoutSiswa() {
     openModal({
         title: "Akhiri Kunjungan?",
@@ -487,7 +493,27 @@ async function studentReturnBook(id) {
         }
     });
 }
+function formatTanggalISO(isoString) {
+    const tanggal = isoString.split("T")[0];
+    const waktu = isoString.split("T")[1].split(".")[0];
 
+    const [year, month, day] = tanggal.split("-");
+    const [hour, minute] = waktu.split(":");
+
+    return `${day}-${month}-${year} ${hour}:${minute}`;
+}
+function getLocalDateTime() {
+    const now = new Date();
+
+    const tahun = now.getFullYear();
+    const bulan = String(now.getMonth() + 1).padStart(2, '0');
+    const tanggal = String(now.getDate()).padStart(2, '0');
+    const jam = String(now.getHours()).padStart(2, '0');
+    const menit = String(now.getMinutes()).padStart(2, '0');
+    const detik = String(now.getSeconds()).padStart(2, '0');
+
+    return `${tahun}-${bulan}-${tanggal} ${jam}:${menit}:${detik}`;
+}
     // --- DATA ENGINE ---
     async function loadDataFromCloud() {
         document.getElementById('loadingOverlay').classList.remove('hidden');
@@ -532,15 +558,21 @@ async function studentReturnBook(id) {
     // --- RENDERERS ---
    function renderMyLoans(list) {
     const container = document.getElementById('list-my-loans');
+
     container.innerHTML = list.map(l => {
+
+        const pinjam = formatISOManual(l.tglPinjam);
+        const kembali = formatISOManual(l.tglKembali);
+
+        const tglPinjam = pinjam.tanggal;
+        const jamPinjam = pinjam.jam;
+        const tglKembali = kembali.tanggal;
+
         const due = new Date(l.tglKembali);
-        const pinjam = new Date(l.tglPinjam);
         const today = new Date();
         today.setHours(0,0,0,0);
-        
-        // Hitung selisih hari
+
         const diff = Math.ceil((due - today) / 86400000);
-        
         // Logika Teks dan Warna
         let statusText = "";
         let colorClass = "";
@@ -561,9 +593,7 @@ async function studentReturnBook(id) {
 
         const borderClass = diff < 0 ? 'border-red-500' : (diff <= 1 ? 'border-amber-500' : 'border-blue-500');
         
-        const formatWaktu = pinjam.toLocaleDateString('id-ID', { 
-            day: 'numeric', month: 'long', year: 'numeric' 
-        }) + ' ' + pinjam.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
 
         return `
         <div class="glass-card p-6 rounded-[35px] border-l-[10px] ${borderClass} animate-slide-up shadow-md relative overflow-hidden">
@@ -592,7 +622,9 @@ async function studentReturnBook(id) {
 
             <div class="flex justify-between items-center pt-3 border-t border-slate-100">
                 <div>
-                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Pinjam: ${formatWaktu}</p>
+                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
+    Pinjam: ${tglPinjam} • ${jamPinjam}
+</p>
                 </div>
                 <div>
                     <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter text-right">Batas: ${due.toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}</p>
@@ -600,6 +632,23 @@ async function studentReturnBook(id) {
             </div>
         </div>`;
     }).join('') || `<div class="text-center py-8 opacity-40 text-xs italic font-medium">Tidak ada pinjaman aktif</div>`;
+}
+function getNamaBulan(m) {
+    const bulan = {
+        "01":"Jan","02":"Feb","03":"Mar","04":"Apr",
+        "05":"Mei","06":"Jun","07":"Jul","08":"Agu",
+        "09":"Sep","10":"Okt","11":"Nov","12":"Des"
+    };
+    return bulan[m] || m;
+}
+function formatISOManual(iso) {
+    const [tanggal, waktu] = iso.split("T");
+    const [year, month, day] = tanggal.split("-");
+    const [hour, minute] = waktu.split(":");
+    return {
+        tanggal: `${day}-${month}-${year}`,
+        jam: `${hour}:${minute}`
+    };
 }
 
 // Membuka Modal Edit
@@ -671,16 +720,12 @@ async function confirmEditLoan() {
     function renderMyHistory(list) {
     const container = document.getElementById('list-my-history');
     container.innerHTML = list.map(h => {
-        const tglPinjam = new Date(h.tglPinjam).toLocaleDateString('id-ID', { 
-            day: 'numeric', month: 'short', year: 'numeric' 
-        });
-        const tglKembali = new Date(h.tglKembali).toLocaleDateString('id-ID', { 
-            day: 'numeric', month: 'short', year: 'numeric' 
-        });
-        const jamKembali = new Date(h.tglKembali).toLocaleTimeString('id-ID', { 
-            hour: '2-digit', minute: '2-digit' 
-        });
+      const pinjam = formatISOManual(h.tglPinjam);
+const kembali = formatISOManual(h.tglKembali);
 
+const tglPinjam = pinjam.tanggal;
+const tglKembali = kembali.tanggal;
+const jamKembali = kembali.jam;
         return `
         <div class="glass-card p-5 rounded-[30px] border-l-[10px] border-emerald-500 animate-slide-up shadow-sm mb-4">
             <div class="flex justify-between items-start mb-3">
@@ -775,17 +820,17 @@ async function confirmEditLoan() {
     document.getElementById('loadingOverlay').classList.remove('hidden');
     document.querySelector('#loadingOverlay p').innerText = "Memproses Pinjaman...";
 
-    // Tambah ke local state
-    const newLoan = {
-        id: Date.now(),
-        namaAnggota: currentStudent.nama,
-        kelas: currentStudent.kelas,
-        judulBuku: book.judul,
-        jumlah: qty,
-        tglPinjam: new Date().toISOString(),
-        tglKembali: due,
-        status: 'Dipinjam'
-    };
+
+const newLoan = {
+    id: Date.now(),
+    namaAnggota: currentStudent.nama,
+    kelas: currentStudent.kelas,
+    judulBuku: book.judul,
+    jumlah: qty,
+    tglPinjam: getISOStringNow(),   // 🔥 ISO UTC
+    tglKembali: due,                // ini tetap dari input date
+    status: 'Dipinjam'
+};
     state.loans.push(newLoan);
     book.stok -= qty;
 
