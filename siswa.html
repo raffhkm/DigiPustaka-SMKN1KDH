@@ -627,7 +627,9 @@ function getLocalDateTime() {
 </p>
                 </div>
                 <div>
-                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter text-right">Batas: ${due.toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}</p>
+                 <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter text-right">
+        Batas: ${due.toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}
+    </p>
                 </div>
             </div>
         </div>`;
@@ -685,28 +687,24 @@ async function confirmEditLoan() {
 
     const loanIndex = state.loans.findIndex(l => l.id === id);
     if(loanIndex > -1) {
-        // Tampilkan loading sebentar saja (feedback visual)
         document.getElementById('loadingOverlay').classList.remove('hidden');
         document.querySelector('#loadingOverlay p').innerText = "Menyimpan perubahan...";
 
-        // Update data lokal
+        // Update data lokal dengan format ISO
         state.loans[loanIndex].jumlah = newQty;
-        state.loans[loanIndex].tglKembali = newDue;
+        // PERBAIKAN DI SINI:
+        state.loans[loanIndex].tglKembali = new Date(newDue).toISOString();
         
         try {
-            // Kirim ke cloud tanpa menunggu (background sync)
-            saveToCloud();
+            await saveToCloud();
             
-            // Tutup modal & Refresh UI segera agar terasa instan
             setTimeout(() => {
                 closeEditModal();
                 refreshSiswaUI();
                 document.getElementById('loadingOverlay').classList.add('hidden');
-                
-                // Beri suara dan toast sukses
                 playDing();
                 showToast("Perubahan berhasil disimpan!");
-            }, 600); // 0.6 detik saja biar tidak dikira ngebug
+            }, 600);
             
         } catch(e) {
             document.getElementById('loadingOverlay').classList.add('hidden');
@@ -827,8 +825,9 @@ const newLoan = {
     kelas: currentStudent.kelas,
     judulBuku: book.judul,
     jumlah: qty,
-    tglPinjam: getISOStringNow(),   // 🔥 ISO UTC
-    tglKembali: due,                // ini tetap dari input date
+    tglPinjam: getISOStringNow(),
+        // PERBAIKAN DI SINI:
+        tglKembali: new Date(due).toISOString(), 
     status: 'Dipinjam'
 };
     state.loans.push(newLoan);
