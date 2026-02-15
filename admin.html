@@ -830,21 +830,25 @@ function exportToPDFReal() {
 
 
     function renderLoans(list) {
-    // Gunakan waktu lokal saat ini tanpa pengaruh jam UTC
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+    // Gunakan waktu lokal saat ini
+    // Ambil tanggal hari ini dalam format YYYY-MM-DD lokal
+    const skrg = new Date();
+    const offset = skrg.getTimezoneOffset() * 60000;
+    const todayStr = new Date(skrg - offset).toISOString().split('T')[0];
+    const today = new Date(todayStr + 'T00:00:00');
+
     const container = document.getElementById('list-pinjam-active');
     
     container.innerHTML = list.map(l => {
-        // Ambil tanggal kembali dan set ke jam 00:00 lokal untuk perbandingan apel-ke-apel
-        const dueDateRaw = new Date(l.tglKembali);
-        const due = new Date(dueDateRaw.getFullYear(), dueDateRaw.getMonth(), dueDateRaw.getDate());
+        // AMBIL TANGGAL SAJA (Tanpa Jam agar tidak tergeser zona waktu)
+        const dateString = l.tglKembali.includes('T') ? l.tglKembali.split('T')[0] : l.tglKembali;
+        
+        // Paksa baca sebagai jam 00:00:00 Waktu Lokal
+        const due = new Date(dateString + 'T00:00:00'); 
         
         const timeDiff = due - today;
         const dayDiff = Math.ceil(timeDiff / (86400000));
-        
-        let countdownText = "";
+               let countdownText = "";
         let countdownClass = "";
 
         if (dayDiff < 0) {
@@ -874,9 +878,15 @@ function exportToPDFReal() {
                     <button onclick="returnBook(${l.id})" class="h-10 px-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase shadow-lg shadow-blue-100">Kembalikan</button>
                 </div>
             </div>
-            <div class="pt-2 border-t border-slate-50 flex justify-between text-[8px] font-black text-slate-400 uppercase">
-                <span>PINJAM: ${formatTanggalID(l.tglPinjam)}</span>
-              
+            <div class="pt-3 mt-2 border-t border-slate-50 flex justify-between items-center text-[9px] font-black uppercase">
+                <div class="flex flex-col">
+                    <span class="text-slate-400">Tgl Pinjam</span>
+                    <span class="text-slate-600">${formatTanggalID(l.tglPinjam)}</span>
+                </div>
+                <div class="text-right flex flex-col">
+                    <span class="text-slate-400">Tgl Batas Kembali</span>
+                    <span class="${dayDiff < 0 ? 'text-red-600' : 'text-blue-600'}">${formatTanggalID(l.tglKembali)}</span>
+                </div>
             </div>
         </div>`;
     }).join('') || '<p class="text-center py-10 opacity-30 text-xs italic">Kosong</p>';
@@ -1044,8 +1054,8 @@ function resetHistoryFilter() {
     // Ambil ID dari input hidden (hasil pilihan dari pencarian)
     const mId = document.getElementById('selected-member-id').value;
     const bId = document.getElementById('selected-book-id').value;
-    const due = document.getElementById('loan-due').value;
-    const qty = parseInt(document.getElementById('loan-qty').value);
+   const due = document.getElementById('loan-due').value; 
+     const qty = parseInt(document.getElementById('loan-qty').value);
 
     // 1. Validasi Input: Pastikan semua data sudah dipilih
     if (!mId) return showToast("Pilih anggota terlebih dahulu!", true);
@@ -1063,18 +1073,32 @@ function resetHistoryFilter() {
     }
 
     // 4. Proses Data (Update State)
-    const newLoan = {
-        id: Date.now(),
-        namaAnggota: m.nama,
-        kelas: m.kelas,
-        judulBuku: b.judul,
-        jumlah: qty,
-        tglPinjam: new Date().toISOString(), // Mencatat waktu pinjam otomatis
-        tglKembali: due,
-        status: 'Dipinjam'
-    };
+    // Cari bagian ini di dalam function processLoan()
+const newLoan = {
+    id: Date.now(),
+    namaAnggota: m.nama,
+    kelas: m.kelas,
+    judulBuku: b.judul,
+    jumlah: qty,
+    tglPinjam: new Date().toISOString(), 
+    // Mengubah string "2026-02-14" menjadi "2026-02-14T17:00:00.000Z"
+   // Mengubah "2026-02-18" menjadi "2026-02-18T00:00:00.000Z"
+tglKembali: due ? new Date(due).toISOString() : "", 
 
-    state.loans.push(newLoan);
+    status: 'Dipinjam'
+};
+
+
+    state.loans.push({
+    id: Date.now(),
+    namaAnggota: m.nama,
+    kelas: m.kelas,
+    judulBuku: b.judul,
+    jumlah: qty,
+    tglPinjam: waktuLokal, 
+    tglKembali: due, // Pastikan 'due' di sini adalah string "YYYY-MM-DD" dari input
+    status: 'Dipinjam'
+});
     
     // Kurangi stok buku secara otomatis
     b.stok -= qty;
@@ -1301,12 +1325,11 @@ function getNowID() {
 
 
 function formatTanggalID(tgl) {
-    if (!tgl || tgl === "") return "-";
+    if (!tgl) return "-";
     try {
-        // Mengambil 10 karakter pertama (YYYY-MM-DD) 
-        // Ini kunci agar jam/menit tidak merusak penanggalan
-        const tglMentah = tgl.includes('T') ? tgl.split('T')[0] : tgl.split(' ')[0];
-        const bagian = tglMentah.split('-'); 
+        // Ambil hanya bagian YYYY-MM-DD, buang bagian jam/T/Z jika ada
+        const tglMurni = tgl.split('T')[0].split(' ')[0];
+        const bagian = tglMurni.split('-'); 
 
         if (bagian.length < 3) return tgl;
 
@@ -1315,17 +1338,16 @@ function formatTanggalID(tgl) {
             "Juli", "Agustus", "September", "Oktober", "November", "Desember"
         ];
 
-        const tahun = bagian[0];
-        const bulan = bulanIndo[parseInt(bagian[1]) - 1];
-        const hari = bagian[2];
-
-        return `${hari} ${bulan} ${tahun}`;
+        // Hasil: 16 Februari 2026
+        return `${bagian[2]} ${bulanIndo[parseInt(bagian[1]) - 1]} ${bagian[0]}`;
     } catch (e) {
-        console.error("Error format tanggal:", e);
         return tgl;
     }
 }
 
+
+
+        
 function formatTanggalJamID(tgl) {
     if (!tgl || tgl === "") return "-";
     try {
@@ -1465,8 +1487,10 @@ state.loans.push({
     kelas: m.kelas,
     judulBuku: b.judul,
     jumlah: qty,
-    tglPinjam: waktuLokal, // Menggunakan waktu lokal yang sudah dikoreksi
-    tglKembali: due,
+    tglPinjam: waktuLokal, 
+   // Mengubah "2026-02-18" menjadi "2026-02-18T00:00:00.000Z"
+tglKembali: due ? new Date(due).toISOString() : "", 
+
     status: 'Dipinjam'
 });
 
@@ -1770,14 +1794,18 @@ function openEditLoanModal(id) {
     const loan = state.loans.find(l => l.id === id);
     if (!loan) return;
 
+    // Potong string ISO agar hanya mengambil YYYY-MM-DD
+    const tglSaja = loan.tglKembali.split('T')[0]; 
+
     document.getElementById('edit-loan-id').value = id;
     document.getElementById('edit-display-member').innerText = `${loan.namaAnggota} (${loan.kelas})`;
     document.getElementById('edit-search-book').value = loan.judulBuku;
     document.getElementById('edit-loan-qty').value = loan.jumlah || 1;
-    document.getElementById('edit-loan-due').value = loan.tglKembali.split('T')[0];
+    document.getElementById('edit-loan-due').value = tglSaja; // Masukkan ke input date
 
     document.getElementById('editLoanModal').classList.remove('hidden');
 }
+
 
 function closeEditModal() {
     document.getElementById('editLoanModal').classList.add('hidden');
@@ -1835,10 +1863,10 @@ async function saveEditLoan() {
     // 3. Kurangi stok buku baru
     newBook.stok -= newQty;
 
-    // 4. Update data peminjaman
     loan.judulBuku = newBookTitle;
-    loan.jumlah = newQty;
-    loan.tglKembali = newDue;
+loan.jumlah = newQty;
+// Pastikan dikonversi ke ISO sebelum simpan
+loan.tglKembali = new Date(newDue).toISOString(); 
 
     closeEditModal();
     refreshUI();
