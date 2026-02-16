@@ -1160,7 +1160,7 @@ function resetLoanForm() {
     document.getElementById('search-loan-book').value = "";
 }
 
-       function returnBook(id) {
+      function returnBook(id) {
     const loan = state.loans.find(l => l.id === id);
     if (!loan) return;
 
@@ -1170,44 +1170,46 @@ function resetLoanForm() {
     const waktuSekarangLokal = new Date(sekarang - offset).toISOString();
 
     const due = new Date(loan.tglKembali);
-const now = new Date(); // Waktu sekarang
-    // Pastikan tglPinjam mengambil dari data pinjaman
-    const tanggalAsliPinjam = loan.tglPinjam; 
-due.setHours(0, 0, 0, 0);
-now.setHours(0, 0, 0, 0);
+    const now = new Date(); 
+    due.setHours(0, 0, 0, 0);
+    now.setHours(0, 0, 0, 0);
 
- let denda = 0;
-// Jika hari ini LEBIH BESAR dari batas kembali, baru kena denda
-if (now > due) {
-    const diffTime = Math.abs(now - due);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    denda = diffDays * DENDA_PER_HARI;
-}
+    let denda = 0;
+    if (now > due) {
+        const diffTime = Math.abs(now - due);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        denda = diffDays * DENDA_PER_HARI;
+    }
 
-
-
-    // Masukkan ke riwayat dengan waktu lokal yang benar
+    // Masukkan ke riwayat
     state.history.unshift({
         nama: loan.namaAnggota,
         buku: loan.judulBuku,
         kelas: loan.kelas,
-        tglPinjam: tanggalAsliPinjam, 
-        tglKembali: waktuSekarangLokal, // SEKARANG SUDAH WAKTU LOKAL
+        tglPinjam: loan.tglPinjam, 
+        tglKembali: waktuSekarangLokal,
         denda: denda
     });
 
-    // Update Stok
+    // --- PERBAIKAN STOK DISINI ---
     const b = state.books.find(b => b.judul === loan.judulBuku);
-    if(b) b.stok = parseInt(b.stok) + (parseInt(loan.jumlah) || 1);
+    if(b) {
+        // Paksa konversi ke Integer (Angka) sebelum dijumlahkan
+        let stokSekarang = parseInt(b.stok) || 0;
+        let jumlahDipinjam = parseInt(loan.jumlah) || 1;
+        b.stok = stokSekarang + jumlahDipinjam;
+    }
 
     // Hapus dari daftar pinjam aktif
     state.loans = state.loans.filter(l => l.id !== id);
 
     playSuccessSound();
     refreshUI();
-    saveToCloud();
-    showToast("Buku telah dikembalikan");
+    saveToCloud(); // Mengirim data terbaru (termasuk stok yg sudah nambah) ke Sheets
+    showToast("Buku telah dikembalikan & stok diperbarui");
 }
+
+   
 function exportToPDF() {
     const tableBody = document.getElementById('reportTableBody');
     const timestamp = document.getElementById('reportTimestamp');
