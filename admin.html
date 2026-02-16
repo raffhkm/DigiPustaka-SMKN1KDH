@@ -453,7 +453,7 @@
                     <i class="fas fa-circle-info text-amber-500"></i>
                     <p class="text-[10px] text-amber-800 font-bold uppercase leading-tight tracking-tight">Denda otomatis dihitung Rp 2.000 / hari jika terlambat</p>
                 </div>
-
+ 
   <div class="space-y-2 mb-4">
     <label style="color: black;" class="text-[10px] font-black text-slate-400 uppercase ml-1">Filter Berdasarkan Tanggal:</label>
     <div class="flex gap-2">
@@ -466,11 +466,18 @@
            <button onclick="clearAllHistory()" class="bg-red-50 text-red-600 px-4 py-3 rounded-2xl font-bold text-xs border border-red-100">
         <i class="fas fa-trash-can"></i>
     </button>
+    </div><div><div class="flex items-center gap-2 mb-4">
+    <div class="relative flex-1">
+        <input type="text" id="historySearch" placeholder="Cari riwayat..." 
+               class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+        <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
     </div>
-                    <input type="text" placeholder="Cari riwayat siswa atau buku..." 
-                        class="w-full pl-12 pr-4 py-4 bg-white search-input rounded-2xl text-sm" 
-                        onkeyup="searchHistory(this.value)">
-                </div>
+    
+    <button onclick="exportToPDFReal()" class="bg-white border border-slate-200 text-red-500 w-12 h-12 rounded-xl flex items-center justify-center hover:bg-red-50 active:scale-90 transition-all shadow-sm">
+        <i class="fas fa-file-pdf text-lg"></i>
+    </button>
+
+</div>
                 <div id="list-history" class="space-y-4 pb-10"></div>
             </section>
         </main>
@@ -800,72 +807,66 @@ function exportToPDFReal() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
 
-    showToast("📄 File PDF sedang didownload...");
+    if (state.history.length === 0) {
+        showToast("Tidak ada data riwayat untuk dicetak", true);
+        return;
+    }
 
-    // 1. Setting Header Laporan
-    doc.setFont("courier", "bold");
-    doc.setFontSize(18);
-    doc.text("DIGIPUSTAKA DIGITAL", 105, 20, { align: "center" });
-    
-    doc.setFontSize(10);
-    doc.setFont("courier", "normal");
-    doc.text("Laporan Riwayat Peminjaman & Pengembalian Buku", 105, 26, { align: "center" });
-    doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')} WIB`, 105, 31, { align: "center" });
-    
-    // Garis Pemisah
-    doc.setLineWidth(0.5);
-    doc.line(15, 35, 195, 35);
+    showToast("📄 Sedang memproses...");
 
-    // 2. Ambil Data dari State History
-    const rows = state.history.map((h, i) => [
-        i + 1,
-        `${h.nama}\n(${h.kelas})`,
-        h.buku,
-        formatTanggalID(h.tglPinjam),
-        formatTanggalID(h.tglKembali),
-        `Rp ${(h.denda || 0).toLocaleString('id-ID')}`
-    ]);
+    try {
+        // Header & Tabel
+        doc.setFont("helvetica", "bold");
+        doc.text("LAPORAN PERPUSTAKAAN", 105, 20, { align: "center" });
+        
+        const rows = state.history.map((h, i) => [
+            i + 1,
+            h.nama,
+            h.buku,
+            formatTanggalID(h.tglPinjam),
+            formatTanggalID(h.tglKembali),
+            "Rp " + (h.denda || 0).toLocaleString('id-ID')
+        ]);
 
-    // 3. Generate Tabel menggunakan AutoTable
-    doc.autoTable({
-        startY: 40,
-        head: [['NO', 'NAMA SISWA', 'JUDUL BUKU', 'TGL PINJAM', 'TGL KEMBALI', 'DENDA']],
-        body: rows,
-        theme: 'grid',
-        headStyles: { 
-            fillColor: [30, 41, 59], 
-            textColor: [255, 255, 255],
-            font: 'courier',
-            halign: 'center'
-        },
-        styles: { 
-            font: 'courier', 
-            fontSize: 8,
-            cellPadding: 3
-        },
-        columnStyles: {
-            0: { halign: 'center', cellWidth: 10 },
-            5: { halign: 'right', fontStyle: 'bold' }
-        }
-    });
+        doc.autoTable({
+            startY: 30,
+            head: [['NO', 'NAMA', 'BUKU', 'PINJAM', 'KEMBALI', 'DENDA']],
+            body: rows,
+            theme: 'striped',
+            styles: { fontSize: 8 }
+        });
 
-    // 4. Footer Tanda Tangan
-    const finalY = doc.lastAutoTable.finalY + 15;
-    doc.setFontSize(9);
-    doc.text("Petugas Perpustakaan,", 150, finalY);
-    doc.text("____________________", 150, finalY + 20);
-    doc.setFont("courier", "bold");
-    doc.text("Admin DigiPustaka", 150, finalY + 25);
+        // OUTPUT LOGIC
+        const blob = doc.output('blob');
+        const pdfUrl = URL.createObjectURL(blob);
+        
+        const previewModal = document.getElementById('pdfPreviewModal');
+        const iframe = document.getElementById('pdfFrame');
+        
+        // Simpan dokumen ke window agar bisa didownload nanti
+        window.currentPDFDoc = doc;
 
-    // 5. Simpan File
-    const tanggal = new Date().toISOString().split('T')[0];
-    doc.save(`Laporan_DigiPustaka_${tanggal}.pdf`);
-    
-    setTimeout(() => {
-        showToast("✅ PDF Berhasil Tersimpan!");
-    }, 500);
+        // Tampilkan Modal
+        previewModal.classList.remove('hidden');
+        
+        // Paksa Iframe Reload
+        iframe.src = pdfUrl;
+
+    } catch (error) {
+        console.error(error);
+        showToast("Gagal memuat PDF", true);
+    }
 }
 
+// Tambahkan juga fungsi downloadnya
+function downloadCurrentPDF() {
+    if (window.currentPDFDoc) {
+        window.currentPDFDoc.save(`Laporan_Perpus_${new Date().getTime()}.pdf`);
+        showToast("✅ PDF Tersimpan");
+    } else {
+        showToast("Data tidak ditemukan", true);
+    }
+}
 
     function renderLoans(list) {
     // Gunakan waktu lokal saat ini
@@ -2178,6 +2179,30 @@ async function saveAsImage() {
         </div>
         
        
+<div id="pdfPreviewModal" class="fixed inset-0 z-[9999] hidden flex flex-col bg-slate-900/95 backdrop-blur-md p-4">
+    <div class="bg-white w-full max-w-4xl mx-auto rounded-3xl overflow-hidden flex flex-col h-full shadow-2xl">
+        <div class="p-4 bg-white border-b flex justify-between items-center">
+            <div>
+                <h3 class="font-black text-slate-800">Preview Laporan PDF</h3>
+                <p class="text-[10px] text-slate-500 font-bold uppercase">Gunakan tombol simpan jika tampilan kosong</p>
+            </div>
+            <button onclick="document.getElementById('pdfPreviewModal').classList.add('hidden')" class="w-10 h-10 bg-slate-100 text-slate-500 rounded-xl">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="flex-1 bg-slate-200 relative">
+            <iframe id="pdfFrame" class="absolute inset-0 w-full h-full border-none" style="min-height: 400px;"></iframe>
+        </div>
+
+        <div class="p-4 bg-white border-t flex gap-3">
+            <button onclick="document.getElementById('pdfPreviewModal').classList.add('hidden')" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold text-sm">Tutup</button>
+            <button onclick="downloadCurrentPDF()" class="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-sm shadow-lg shadow-blue-200 flex items-center justify-center gap-2">
+                <i class="fas fa-download"></i> Simpan ke HP
+            </button>
+        </div>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
