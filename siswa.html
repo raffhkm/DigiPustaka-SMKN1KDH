@@ -320,11 +320,13 @@
                         onkeyup="searchKatalog(this.value)">
                 </div>
 
-                <div id="katalogTabs" class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                    <button onclick="setCat('Pelajaran')" class="tab-btn-siswa active px-6 py-3 rounded-2xl font-extrabold text-xs whitespace-nowrap bg-blue-600 text-white shadow-lg shadow-blue-100 transition-all">Pelajaran</button>
-                    <button onclick="setCat('Fiksi')" class="tab-btn-siswa px-6 py-3 rounded-2xl font-extrabold text-xs whitespace-nowrap bg-white text-slate-500 transition-all">Fiksi</button>
-                    <button onclick="setCat('Pengetahuan')" class="tab-btn-siswa px-6 py-3 rounded-2xl font-extrabold text-xs whitespace-nowrap bg-white text-slate-500 transition-all">Pengetahuan</button>
-                </div>
+               <div id="katalogTabs" class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+    <button onclick="setCat('Semua')" class="tab-btn-siswa active px-6 py-3 rounded-2xl font-extrabold text-xs whitespace-nowrap bg-blue-600 text-white shadow-lg shadow-blue-100 transition-all">Semua</button>
+    <button onclick="setCat('Pelajaran')" class="tab-btn-siswa px-6 py-3 rounded-2xl font-extrabold text-xs whitespace-nowrap bg-white text-slate-500 transition-all">Pelajaran</button>
+    <button onclick="setCat('Fiksi')" class="tab-btn-siswa px-6 py-3 rounded-2xl font-extrabold text-xs whitespace-nowrap bg-white text-slate-500 transition-all">Fiksi</button>
+    <button onclick="setCat('Pengetahuan')" class="tab-btn-siswa px-6 py-3 rounded-2xl font-extrabold text-xs whitespace-nowrap bg-white text-slate-500 transition-all">Pengetahuan</button>
+</div>
+
 <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 p-4 rounded-3xl flex items-center gap-4 shadow-sm animate-in fade-in duration-700">
     <div class="w-10 h-10 bg-amber-500 text-white rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-200">
         <i class="fas fa-wallet text-sm"></i>
@@ -392,7 +394,7 @@
         kelas: ""
     };
 
-    let currentCategory = 'Pelajaran';
+    let currentCategory = 'Semua';
 
     // --- AUDIO ENGINE ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -837,10 +839,14 @@ const jamKembali = kembali.jam;
 
     function renderKatalog(list) {
     const container = document.getElementById('list-katalog');
-    const filtered = list.filter(b => b.kategori === currentCategory);
+    
+    // Logika Filter: Jika 'Semua', tampilkan semua. Jika tidak, filter berdasarkan kategori.
+    const filtered = currentCategory === 'Semua' 
+        ? list 
+        : list.filter(b => b.kategori === currentCategory);
     
     container.innerHTML = filtered.map(b => {
-        const isOutOfStock = b.stok <= 0;
+        const isOutOfStock = parseInt(b.stok) <= 0;
         const stockColor = isOutOfStock ? 'text-red-500' : 'text-emerald-500';
         const btnClass = isOutOfStock 
             ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
@@ -867,7 +873,6 @@ const jamKembali = kembali.jam;
                     <h4 class="font-black text-slate-800 text-sm leading-tight line-clamp-2 mb-1 uppercase tracking-tight">${b.judul}</h4>
                     <p class="text-[10px] text-slate-400 font-medium italic mb-2">Oleh: ${b.penulis || 'Anonim'}</p>
                 </div>
-
 
                 <button onclick="${isOutOfStock ? '' : `quickPickBook(${b.id})`}" 
                     class="w-full py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${btnClass}">
@@ -1004,22 +1009,25 @@ function nav(target) {
 function setCat(cat) {
     currentCategory = cat;
     document.querySelectorAll('.tab-btn-siswa').forEach(btn => {
-        btn.classList.remove('bg-blue-600', 'text-white', 'active');
+        btn.classList.remove('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-100', 'active');
         btn.classList.add('bg-white', 'text-slate-500');
     });
-    event.currentTarget.classList.add('bg-blue-600', 'text-white', 'active');
-    renderKatalog(state.books);
-}
+    event.currentTarget.classList.add('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-100', 'active');
+    event.currentTarget.classList.remove('bg-white', 'text-slate-500');
+    event.currentTarget.classList.add('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-100', 'active');
+    event.currentTarget.classList.remove('bg-white', 'text-slate-500');
 
+    // --- TAMBAHKAN BARIS INI ---
+    renderKatalog(state.books); 
+
+    }
 function searchKatalog(q) {
-    const filtered = state.books.filter(b => 
-        b.judul.toLowerCase().includes(q.toLowerCase())
-    );
     const container = document.getElementById('list-katalog');
-    // Logika render mirip renderKatalog tapi pakai list hasil filter
-    container.innerHTML = filtered.map(b => {
-        // ... (gunakan template literal yang sama dengan fungsi renderKatalog kamu)
-    }).join('');
+    const filtered = state.books.filter(b => 
+        b.judul.toLowerCase().includes(q.toLowerCase()) || 
+        b.penulis.toLowerCase().includes(q.toLowerCase())
+    );
+    renderKatalog(filtered); // Gunakan renderKatalog yang sudah ada
 }
 
 // --- REFRESH UI ---
