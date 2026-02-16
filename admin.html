@@ -439,14 +439,6 @@
                     <i class="fas fa-circle-info text-amber-500"></i>
                     <p class="text-[10px] text-amber-800 font-bold uppercase leading-tight tracking-tight">Denda otomatis dihitung Rp 2.000 / hari jika terlambat</p>
                 </div>
-<div class="flex gap-2 mb-4">
-    <button onclick="exportToPDF()" class="flex-1 bg-emerald-600 text-white px-4 py-3 rounded-2xl font-bold text-xs shadow-lg flex items-center justify-center gap-2">
-        <i class="fas fa-file-pdf"></i> Lihat & Cetak PDF
-    </button>
-    <button onclick="clearAllHistory()" class="bg-red-50 text-red-600 px-4 py-3 rounded-2xl font-bold text-xs border border-red-100">
-        <i class="fas fa-trash-can"></i>
-    </button>
-</div>
 
   <div class="space-y-2 mb-4">
     <label style="color: black;" class="text-[10px] font-black text-slate-400 uppercase ml-1">Filter Berdasarkan Tanggal:</label>
@@ -457,6 +449,9 @@
         <button onclick="resetHistoryFilter()" class="px-4 bg-slate-200 text-slate-600 rounded-2xl text-xs font-bold">
             Reset
         </button>
+           <button onclick="clearAllHistory()" class="bg-red-50 text-red-600 px-4 py-3 rounded-2xl font-bold text-xs border border-red-100">
+        <i class="fas fa-trash-can"></i>
+    </button>
     </div>
                     <input type="text" placeholder="Cari riwayat siswa atau buku..." 
                         class="w-full pl-12 pr-4 py-4 bg-white search-input rounded-2xl text-sm" 
