@@ -470,7 +470,7 @@ document.querySelector('#sec-home p.italic').innerText = `"${getRandomQuote()}"`
 
 // --- FUNGSI PENGEMBALIAN BUKU ---
 async function studentReturnBook(id) {
-    // Cari data pinjaman berdasarkan ID
+    // 1. Cari data pinjaman berdasarkan ID
     const loanIndex = state.loans.findIndex(l => l.id === id);
     if (loanIndex === -1) return;
 
@@ -483,36 +483,50 @@ async function studentReturnBook(id) {
             document.getElementById('loadingOverlay').classList.remove('hidden');
             document.querySelector('#loadingOverlay p').innerText = "Memproses Pengembalian...";
 
-
             try {
-                // 1. Tambahkan ke Riwayat
+                // --- LOGIKA HITUNG DENDA ---
+                const tglSekarang = new Date();
+                tglSekarang.setHours(0,0,0,0);
+                
+                const tglBatas = new Date(loan.tglKembali);
+                tglBatas.setHours(0,0,0,0);
+
+                let dendaTerhitung = 0;
+                if (tglSekarang > tglBatas) {
+                    const selisihWaktu = Math.abs(tglSekarang - tglBatas);
+                    const selisihHari = Math.ceil(selisihWaktu / (1000 * 60 * 60 * 24));
+                    dendaTerhitung = selisihHari * 2000;
+                }
+                // ---------------------------
+
+                // 2. Tambahkan ke Riwayat dengan keterangan denda
                 const historyEntry = {
-    id: Date.now(),
-    nama: loan.namaAnggota,
-    buku: loan.judulBuku,
-    tglPinjam: loan.tglPinjam,
-    tglKembali: getISOStringNow(), // 🔥 ISO UTC
-    status: "Selesai"
-};
+                    id: Date.now(),
+                    nama: loan.namaAnggota,
+                    buku: loan.judulBuku,
+                    tglPinjam: loan.tglPinjam,
+                    tglKembali: getISOStringNow(),
+                    denda: dendaTerhitung, // Menyimpan nilai denda ke riwayat
+                    status: "Selesai"
+                };
                 state.history.unshift(historyEntry);
 
-                // 2. Kembalikan Stok Buku
+                // 3. Kembalikan Stok Buku
                 const book = state.books.find(b => b.judul === loan.judulBuku);
                 if (book) {
                     book.stok = parseInt(book.stok) + parseInt(loan.jumlah);
                 }
 
-                // 3. Hapus dari daftar Pinjaman Aktif
+                // 4. Hapus dari daftar Pinjaman Aktif
                 state.loans.splice(loanIndex, 1);
 
-                // 4. Simpan ke Cloud
+                // 5. Simpan ke Cloud
                 await saveToCloud();
                 
-                // Beri jeda sedikit agar Google Sheets selesai menulis
                 setTimeout(async () => {
                     await loadDataFromCloud();
                     playDing();
-                    showToast("Buku berhasil dikembalikan!");
+                    showToast(dendaTerhitung > 0 ? `Buku kembali! Denda: Rp ${dendaTerhitung.toLocaleString('id-ID')}` : "Buku berhasil dikembalikan!");
                     document.getElementById('loadingOverlay').classList.add('hidden');
                 }, 1000);
 
@@ -524,6 +538,7 @@ async function studentReturnBook(id) {
         }
     });
 }
+
 function getISOStringNow() {
     const now = new Date();
     const offset = now.getTimezoneOffset() * 60000;
@@ -612,17 +627,16 @@ function getLocalDateTime() {
     const container = document.getElementById('list-my-loans');
 
     container.innerHTML = list.map(l => {
+        // Mengambil data tanggal dan jam dari format ISO
         const pinjam = formatISOManual(l.tglPinjam);
         const due = new Date(l.tglKembali);
         
-        // Reset waktu ke 00:00:00 agar perbandingan hanya pada tanggal
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
         const dueDate = new Date(due);
         dueDate.setHours(0, 0, 0, 0);
 
-        // Menghitung selisih hari
         const diffTime = dueDate - today;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
@@ -631,13 +645,12 @@ function getLocalDateTime() {
         let dendaInfo = "";
         
         if (diffDays < 0) {
-            // Jika hari ini sudah melewati tanggal batas
             const hariTelat = Math.abs(diffDays);
             const totalDenda = hariTelat * 2000;
             statusText = `TELAT ${hariTelat} HARI`;
             colorClass = "border-red-500 bg-red-100 text-red-600";
             dendaInfo = `<div class="mt-2 text-[10px] font-black text-red-700 bg-red-200 px-3 py-1 rounded-lg inline-block animate-pulse">
-                            ⚠️ DENDA: Rp ${totalDenda.toLocaleString('id-ID')} (Rp 2.000/hari)
+                            ⚠️ DENDA: Rp ${totalDenda.toLocaleString('id-ID')}
                          </div>`;
         } else if (diffDays === 0) {
             statusText = "TERAKHIR HARI INI";
@@ -655,8 +668,8 @@ function getLocalDateTime() {
                 <div class="flex-1">
                     <h5 class="font-extrabold text-lg text-slate-800 leading-tight">${l.judulBuku}</h5>
                     <div class="flex items-center gap-2 mt-1 text-blue-600">
-                         <i class="fas fa-book text-[10px]"></i>
-                         <span class="text-[11px] font-black uppercase tracking-wider">Koleksi Digital</span>
+                         <i class="fas fa-clock text-[10px]"></i>
+                         <span class="text-[10px] font-black uppercase tracking-wider">Dipinjam pukul: ${pinjam.jam}</span>
                     </div>
                 </div>
                 <div class="flex gap-2">
@@ -671,7 +684,7 @@ function getLocalDateTime() {
                 <div class="flex gap-2">
                     <span class="bg-blue-100 text-blue-700 text-[10px] px-3 py-1 rounded-lg font-black">${l.jumlah} BUKU</span>
                     <span class="${colorClass} text-[10px] px-3 py-1 rounded-lg font-black flex items-center gap-1">
-                        <i class="far fa-clock"></i> ${statusText}
+                        <i class="far fa-calendar-alt"></i> ${statusText}
                     </span>
                 </div>
                 ${dendaInfo}
@@ -680,18 +693,19 @@ function getLocalDateTime() {
             <div class="flex justify-between items-center pt-3 border-t border-slate-100">
                 <div>
                     <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
-                        Pinjam: ${pinjam.tanggal}
+                        Tanggal Pinjam: ${pinjam.tanggal}
                     </p>
                 </div>
                 <div>
                     <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter text-right">
-                        Batas: ${due.toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}
+                        Batas Kembali: ${due.toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}
                     </p>
                 </div>
             </div>
         </div>`;
     }).join('') || `<div class="text-center py-8 opacity-40 text-xs italic font-medium">Tidak ada pinjaman aktif</div>`;
 }
+
 
 function getNamaBulan(m) {
     const bulan = {
@@ -793,39 +807,52 @@ async function confirmEditLoan() {
     function renderMyHistory(list) {
     const container = document.getElementById('list-my-history');
     container.innerHTML = list.map(h => {
-      const pinjam = formatISOManual(h.tglPinjam);
-const kembali = formatISOManual(h.tglKembali);
+        const pinjam = formatISOManual(h.tglPinjam);
+        const kembali = formatISOManual(h.tglKembali);
 
-const tglPinjam = pinjam.tanggal;
-const tglKembali = kembali.tanggal;
-const jamKembali = kembali.jam;
+        let dendaBadge = '';
+        if (h.denda && h.denda > 0) {
+            dendaBadge = `
+                <div class="mt-2 flex items-center gap-1.5 text-[9px] font-black text-red-600 bg-red-50 border border-red-100 px-2 py-1 rounded-lg">
+                    <i class="fas fa-receipt"></i>
+                    DENDA DIBAYAR: Rp ${parseInt(h.denda).toLocaleString('id-ID')}
+                </div>`;
+        } else {
+            dendaBadge = `
+                <div class="mt-2 flex items-center gap-1.5 text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg">
+                    <i class="fas fa-check-double"></i>
+                    TEPAT WAKTU / BEBAS DENDA
+                </div>`;
+        }
+
         return `
-        <div class="glass-card p-5 rounded-[30px] border-l-[10px] border-emerald-500 animate-slide-up shadow-sm mb-4">
-            <div class="flex justify-between items-start mb-3">
+        <div class="glass-card p-5 rounded-[30px] border-l-[10px] border-slate-300 animate-slide-up shadow-sm mb-4 opacity-90">
+            <div class="flex justify-between items-start mb-2">
                 <div class="flex-1">
                     <h5 class="font-extrabold text-sm text-slate-800 leading-tight">${h.buku}</h5>
-                    <p class="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">
-                        <i class="fas fa-calendar-alt mr-1"></i> Pinjam: ${tglPinjam}
+                    <p class="text-[9px] text-slate-400 font-bold mt-1 uppercase">
+                        Pinjam: ${pinjam.tanggal} <span class="text-blue-500 ml-1"><i class="far fa-clock"></i> ${pinjam.jam}</span>
                     </p>
                 </div>
-                <div class="bg-emerald-100 text-emerald-600 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-                    <i class="fas fa-check-circle text-[10px]"></i>
-                    <span class="text-[9px] font-black uppercase">Selesai</span>
+                <div class="bg-slate-100 text-slate-500 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                    <i class="fas fa-archive text-[10px]"></i>
+                    <span class="text-[9px] font-black uppercase">Arsip</span>
                 </div>
             </div>
 
-            <div class="flex justify-between items-center pt-3 border-t border-dashed border-slate-200">
+            ${dendaBadge}
+
+            <div class="flex justify-between items-center pt-3 mt-3 border-t border-dashed border-slate-200">
                 <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500">
-                        <i class="fas fa-undo-alt text-xs"></i>
+                    <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-500">
+                        <i class="fas fa-calendar-check text-xs"></i>
                     </div>
                     <div>
-                        <p class="text-[8px] text-slate-400 font-black uppercase leading-none">Dikembalikan Pada</p>
-                        <p class="text-[11px] text-slate-700 font-extrabold mt-0.5">${tglKembali} • ${jamKembali}</p>
+                        <p class="text-[8px] text-slate-400 font-black uppercase leading-none">Selesai Pada</p>
+                        <p class="text-[10px] text-slate-700 font-extrabold mt-0.5">
+                            ${kembali.tanggal} <span class="text-blue-600 ml-1">[${kembali.jam}]</span>
+                        </p>
                     </div>
-                </div>
-                <div class="text-right">
-                    <p class="text-[8px] text-emerald-500 font-black uppercase bg-emerald-50 px-2 py-1 rounded-md">Status Aman</p>
                 </div>
             </div>
         </div>`;
