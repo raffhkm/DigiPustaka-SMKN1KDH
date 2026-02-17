@@ -2044,6 +2044,56 @@ async function saveAsImage() {
         showToast("Gagal menyimpan gambar", true);
     });
 }
+function generateECard(nama, kelas, id) {
+    // Tampilkan Modal
+    document.getElementById('ecardModal').classList.remove('hidden');
+    
+    // Isi Data
+    document.getElementById('ecard-name').innerText = nama.toUpperCase();
+    document.getElementById('ecard-class').innerText = kelas;
+
+    // Generate Barcode
+    // Gunakan try-catch agar jika library belum load tidak error total
+    try {
+        JsBarcode("#barcodeCanvas", id, {
+            format: "CODE128",
+            lineColor: "#1e293b",
+            width: 2,
+            height: 60,
+            displayValue: true,
+            fontSize: 14,
+            font: "monospace",
+            background: "#f8fafc" // mencocokkan bg slate-50
+        });
+        showToast("E-Card Berhasil Dibuat");
+    } catch (e) {
+        console.error("JsBarcode error:", e);
+    }
+}
+
+function closeECard() {
+    document.getElementById('ecardModal').classList.add('hidden');
+}
+
+// Fungsi tambahan untuk download kartu anggota sebagai gambar
+function downloadECard() {
+    const area = document.getElementById('ecard-capture-area');
+    const nama = document.getElementById('ecard-name').innerText;
+    
+    showToast("📸 Menyiapkan gambar...");
+    
+    html2canvas(area, {
+        scale: 3,
+        borderRadius: 35,
+        backgroundColor: null
+    }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `MemberCard_${nama}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+        showToast("Kartu tersimpan di Galeri!");
+    });
+}
 
 </script>
 <div id="customModal" class="fixed inset-0 z-[5000] hidden flex items-center justify-center p-6">
@@ -2220,17 +2270,68 @@ async function saveAsImage() {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <div id="ecardModal" class="fixed inset-0 z-[8000] hidden flex items-center justify-center p-6">
-    <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-md"></div>
-    <div class="relative bg-white w-full max-w-sm rounded-[35px] overflow-hidden shadow-2xl animate-in zoom-in duration-300">
-        <div class="bg-gradient-to-br from-blue-600 to-indigo-800 p-8 text-white text-center relative">
-            <div class="absolute top-4 right-6 opacity-20 text-4xl"><i class="fas fa-microchip"></i></div>
-            <div class="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md border border-white/30">
-                <i class="fas fa-user text-3xl"></i>
+    <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onclick="closeECard()"></div>
+    
+    <div class="relative w-full max-w-sm animate-in zoom-in duration-300">
+        <button onclick="closeECard()" class="absolute -top-12 right-0 w-10 h-10 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-all">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <div id="ecard-capture-area" class="bg-white rounded-[35px] overflow-hidden shadow-2xl">
+            <div class="bg-gradient-to-br from-blue-700 via-indigo-800 to-slate-900 p-8 text-white text-center relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+                    <svg width="100%" height="100%"><rect width="100%" height="100%" fill="url(#grid)" /></svg>
+                    <defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="white" stroke-width="0.5"/></pattern></defs>
+                </div>
+                
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-6">
+                      <div class="text-left">
+                            <h4 class="text-[10px] font-black tracking-[0.2em] text-blue-300 uppercase"> Kartu Anggota</h4>
+                            <p class="text-[8px] font-bold text-white/50 uppercase">DigiPustaka ID</p>
+                        </div>
+                        <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/20">
+                            <i class="fas fa-bookmark text-blue-300"></i>
+                        </div>
+                    </div>
+
+                    <div class="w-24 h-24 bg-gradient-to-b from-white to-slate-200 rounded-[2rem] flex items-center justify-center mx-auto mb-4 shadow-2xl border-4 border-white/20">
+                        <i class="fas fa-user-tie text-4xl text-slate-800"></i>
+                    </div>
+
+                    <h3 id="ecard-name" class="font-black text-2xl tracking-tight leading-tight mb-1">NAMA SISWA</h3>
+                    <div class="inline-block px-3 py-1 bg-blue-500/30 rounded-full border border-white/20">
+                        <p id="ecard-class" class="text-[10px] font-extrabold uppercase tracking-widest"></p>
+                    </div>
+                </div>
             </div>
-            <h3 id="ecard-name" class="font-black text-xl tracking-tight leading-tight">NAMA SISWA</h3>
-            <p id="ecard-class" class="text-blue-200 text-xs font-bold uppercase tracking-widest mt-1">KELAS / JURUSAN</p>
+
+            <div class="p-8 bg-white text-center">
+                <div class="bg-slate-50 p-6 rounded-[24px] border border-slate-100 mb-6">
+                    <canvas id="barcodeCanvas" class="mx-auto max-w-full"></canvas>
+                </div>
+                
+                <div class="flex justify-between items-center text-left px-2">
+                    <div>
+                        <p class="text-[8px] font-black text-slate-400 uppercase">Status Akses</p>
+                        <p class="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> AKTIF
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[8px] font-black text-slate-400 uppercase">Sistem</p>
+                        <p class="text-[10px] font-bold text-slate-800">DigiPustaka v3.0</p>
+                    </div>
+                </div>
+            </div>
         </div>
-        
+
+        <button onclick="downloadECard()" class="w-full mt-4 bg-white text-slate-900 py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all">
+            <i class="fas fa-download text-blue-600"></i> SIMPAN KARTU KE GALERI
+        </button>
+    </div>
+</div>
+
        
 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
