@@ -27,7 +27,81 @@
     height: 100%;
     z-index: 5000;
 }
+/* --- DESKTOP MODE SYSTEM --- */
+:root {
+    --sidebar-width: 280px;
+}
 
+@media (min-width: 1024px) {
+    /* Saat class desktop-mode aktif di body */
+    body.desktop-mode {
+        background-color: #f8fafc;
+        padding-bottom: 0 !important; /* Hapus padding bottom mobile */
+    }
+
+    .desktop-mode #mainApp {
+        display: grid;
+        grid-template-columns: var(--sidebar-width) 1fr;
+        min-height: 100vh;
+    }
+
+    .desktop-mode .sidebar {
+        display: flex !important;
+        height: 100vh;
+        position: fixed;
+        width: var(--sidebar-width);
+        background: white;
+        border-right: 1px solid #e2e8f0;
+        flex-direction: column;
+        z-index: 100;
+    }
+
+    .desktop-mode main {
+        grid-column: 2;
+        padding: 40px;
+        margin-top: 80px; /* Ruang untuk header */
+    }
+
+    .desktop-mode header {
+        position: fixed;
+        top: 0;
+        right: 0;
+        left: var(--sidebar-width);
+        width: auto;
+        z-index: 90;
+        border-radius: 0;
+    }
+
+    /* Hilangkan Navbar Bawah Total */
+    .desktop-mode nav.fixed-bottom, 
+    .desktop-mode nav:last-child {
+        display: none !important;
+    }
+}
+
+/* Sidebar Link Styling */
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    margin: 4px 16px;
+    border-radius: 14px;
+    color: #64748b;
+    font-weight: 700;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.sidebar-link:hover {
+    background: #f1f5f9;
+    color: #2563eb;
+}
+
+.sidebar-link.active {
+    background: #eff6ff;
+    color: #2563eb;
+}
        .login-bg {
     /* Silakan ganti URL di bawah ini dengan gambar khusus untuk login */
     background-image: linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.8)), 
@@ -186,27 +260,72 @@
     </div>
 
     <!-- MAIN APP CONTENT -->
-    <div id="mainApp" class="hidden">
-        <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white sticky top-0 z-[100] px-6 py-5 flex justify-between items-center border-b border-blue-500/30">
-            <div class="flex items-center gap-4">
-              <div class="w-11 h-11 bg-blue-50 rounded-2xl flex items-center justify-center shadow-inner overflow-hidden">
-    <img src="logo.jpg" alt="Logo" class="w-full h-full object-cover">
-</div>
-                <div>
-                    <h2 id="pageTitle" class="text-lg font-extrabold text-white leading-none">Dashboard</h2>
-                    <p class="text-[10px] text-blue-100 font-bold uppercase tracking-tighter mt-1">SISTEM PERPUSTAKAAN DIGITAL</p>
-                    <p class="text-[10px] text-blue-100 font-bold uppercase tracking-tighter mt-1"><small>Developed by raffhkm</small></p>
+   <div id="mainApp" class="hidden">
+    
+    <aside class="sidebar hidden shadow-sm animate-in slide-in-from-left duration-500">
+        <div class="p-8 mb-4">
+            <h1 class="text-2xl font-black text-slate-800 tracking-tighter">Digi<span class="text-blue-600">Pustaka</span></h1>
+            <p class="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Admin Control Panel</p>
+        </div>
+        
+        <nav class="flex-1">
+            <button onclick="nav('dashboard')" class="sidebar-link w-[248px] active" data-side="dashboard">
+                <i class="fas fa-house-chimney w-5"></i> Dashboard
+            </button>
+            <button onclick="nav('anggota')" class="sidebar-link w-[248px]" data-side="anggota">
+                <i class="fas fa-user-group w-5"></i> Data Anggota
+            </button>
+            <button onclick="nav('pinjaman')" class="sidebar-link w-[248px]" data-side="pinjaman">
+                <i class="fas fa-plus-circle w-5"></i> Layanan Pinjam
+            </button>
+            <button onclick="nav('buku')" class="sidebar-link w-[248px]" data-side="buku">
+                <i class="fas fa-book-open w-5"></i> Katalog Buku
+            </button>
+            <button onclick="nav('riwayat')" class="sidebar-link w-[248px]" data-side="riwayat">
+                <i class="fas fa-clock-rotate-left w-5"></i> Riwayat Perpustakaan
+            </button>
+        </nav>
+
+        <div class="p-6 border-t border-slate-100">
+            <div class="bg-slate-50 p-4 rounded-2xl">
+                <p class="text-[10px] font-black text-slate-400 uppercase">Status System</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                    <span class="text-xs font-bold text-slate-700">Cloud Connected</span>
                 </div>
             </div>
-            <div class="flex items-center gap-2">
-                <button onclick="refreshOnlyUI()" class="w-11 h-11 bg-white/10 text-white rounded-2xl flex items-center justify-center hover:bg-white/20 transition-colors">
-                    <i class="fas fa-rotate"></i>
-                </button>
-                <button onclick="logoutApp()" class="w-11 h-11 bg-white/10 text-white rounded-2xl flex items-center justify-center hover:bg-red-500/50 transition-colors">
-                    <i class="fas fa-right-from-bracket"></i>
-                </button>
+        </div>
+    </aside>
+
+    <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white sticky top-0 z-[100] px-6 py-5 flex justify-between items-center border-b border-blue-500/30">
+        <div class="flex items-center gap-4">
+            <div class="w-11 h-11 bg-blue-50 rounded-2xl flex items-center justify-center shadow-inner overflow-hidden lg:hidden">
+                <img src="logo.jpg" alt="Logo" class="w-full h-full object-cover">
             </div>
-        </header>
+            <div>
+                <h2 id="pageTitle" class="text-lg font-extrabold text-white leading-none">Dashboard</h2>
+                <p class="text-[10px] text-blue-100 font-bold uppercase tracking-tighter mt-1">Admin Management</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="btnDesktopMode" onclick="toggleDisplayMode('desktop')" class="w-11 h-11 bg-white/10 text-white rounded-2xl flex items-center justify-center hover:bg-white/20 transition-all">
+                <i class="fas fa-laptop"></i>
+            </button>
+            <button id="btnMobileMode" onclick="toggleDisplayMode('mobile')" class="hidden w-11 h-11 bg-white/10 text-white rounded-2xl items-center justify-center hover:bg-white/20 transition-all">
+                <i class="fas fa-mobile-screen-button"></i>
+            </button>
+            
+            <div class="h-8 w-[1px] bg-white/20 mx-1 hidden lg:block"></div>
+            
+            <button onclick="refreshOnlyUI()" class="w-11 h-11 bg-white/10 text-white rounded-2xl flex items-center justify-center hover:bg-white/20 transition-colors">
+                <i class="fas fa-rotate"></i>
+            </button>
+            <button onclick="logoutApp()" class="w-11 h-11 bg-white/10 text-white rounded-2xl flex items-center justify-center hover:bg-red-500/50 transition-colors">
+                <i class="fas fa-right-from-bracket"></i>
+            </button>
+        </div>
+    </header>
 <!-- PREMIUM LIVE MARQUEE -->
 <div class="relative overflow-hidden rounded-b-3xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 shadow-lg">
     
@@ -1374,8 +1493,38 @@ function getNowID() {
     second: '2-digit'
   });
 }
+function toggleDisplayMode(mode) {
+    const body = document.body;
+    const btnDesktop = document.getElementById('btnDesktopMode');
+    const btnMobile = document.getElementById('btnMobileMode');
 
+    if (mode === 'desktop') {
+        body.classList.add('desktop-mode');
+        btnDesktop.classList.replace('flex', 'hidden');
+        btnMobile.classList.replace('hidden', 'flex');
+        showToast("Mode Desktop Aktif 💻");
+    } else {
+        body.classList.remove('desktop-mode');
+        btnDesktop.classList.replace('hidden', 'flex');
+        btnMobile.classList.replace('flex', 'hidden');
+        showToast("Mode Mobile Aktif 📱");
+    }
+}
 
+// Override fungsi nav bawaan agar sidebar ikut berubah status active-nya
+const originalNav = nav;
+nav = function(page) {
+    originalNav(page); // Panggil fungsi asli dari file admin.html
+    
+    // Update menu di Sidebar
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+        link.classList.remove('active');
+        // Cek apakah tombol sidebar ini mengarah ke page yang sedang dibuka
+        if(link.getAttribute('onclick').includes(page)) {
+            link.classList.add('active');
+        }
+    });
+};
 function formatTanggalID(tgl) {
     if (!tgl) return "-";
     try {
